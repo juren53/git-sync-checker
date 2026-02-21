@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.2.1] - 2026-02-21
+
+### Fixed
+- Sync failure status label now reads "❌ Sync failed — ask Claude Code?" to guide users toward help.
+- Error message persists as a hover tooltip on the status label after the dialog is dismissed.
+- Warning dialog appends "Tip: ask Claude Code to help fix this."
+- Tooltip is cleared automatically on the next successful status refresh.
+- Updated `.desktop` `Exec` to point to installed binary (`~/.local/bin/git-sync-checker`) instead of `run.sh`.
+
 ## [0.2.0] - 2026-02-21
 
 ### Added
