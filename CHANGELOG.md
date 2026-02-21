@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.0.7] - 2026-02-21
+
+### Added
+- Integrated `icon_loader.py` from Icon_Manager_Module for cross-platform icon management.
+- Added `resources/icons/` containing `app.ico`, `app.png`, and individual resolution PNGs (16–256px), generated from `app.png` via Pillow.
+- Added `icons.set_taskbar_icon()` call after `window.show()` to fix Windows 11 taskbar showing default Python icon.
+- Added `app.setWindowIcon(icons.app_icon())` at application level in `main()`.
+
+### Changed
+- Replaced manual `QIcon(icon_path)` / `os.path.exists()` icon setup in `MainWindow.__init__` with `icons.app_icon()`.
+- Bump version to 0.0.7.
+
 ## [0.0.6] - 2026-02-21
 
 ### Added
