@@ -67,9 +67,9 @@ def check_git_sync(repo_path):
     run_git_command(repo_path, "fetch", "--all")
 
     rc_local, local_head, _ = run_git_command(repo_path, "rev-parse", "HEAD")
-    rc_remote, remote_head, _ = run_git_command(repo_path, "rev-parse", "origin/HEAD")
-    rc_ahead, ahead_out, _ = run_git_command(repo_path, "rev-list", "--count", "origin/HEAD..HEAD")
-    rc_behind, behind_out, _ = run_git_command(repo_path, "rev-list", "--count", "HEAD..origin/HEAD")
+    rc_remote, remote_head, _ = run_git_command(repo_path, "rev-parse", "@{u}")
+    rc_ahead, ahead_out, _ = run_git_command(repo_path, "rev-list", "--count", "@{u}..HEAD")
+    rc_behind, behind_out, _ = run_git_command(repo_path, "rev-list", "--count", "HEAD..@{u}")
 
     if rc_local != 0 or rc_remote != 0:
         return "error", 0, 0
