@@ -9,7 +9,7 @@ from typing import Any, Optional
 from PyQt6.QtGui import QFont, QIcon
 from icon_loader import icons
 
-__version__ = "0.0.9"
+__version__ = "0.1.0"
 
 
 if getattr(sys, 'frozen', False):
@@ -50,6 +50,20 @@ class GitCheckThread(QThread):
         for path, name in zip(PROJECT_PATHS, PROJECT_NAMES):
             status, ahead, behind = check_git_sync(path)
             self.result_ready.emit(name, status, ahead, behind)
+
+
+class GitSyncThread(QThread):
+    sync_done = pyqtSignal(str, bool, str)  # name, success, message
+
+    def __init__(self, name, path):
+        super().__init__()
+        self.name = name
+        self.path = path
+
+    def run(self):
+        rc, out, err = run_git_command(self.path, "pull", "--ff-only")
+        success = rc == 0
+        self.sync_done.emit(self.name, success, out if success else err)
 
 
 def run_git_command(repo_path, *args):
@@ -140,6 +154,7 @@ class MainWindow(QMainWindow):
         main_layout.addLayout(button_layout)
 
         self.git_thread: Optional[QThread] = None
+        self._sync_threads: list[GitSyncThread] = []
 
     def _clear_project_ui(self):
         # Remove all widgets from self.status_layout
@@ -186,11 +201,16 @@ class MainWindow(QMainWindow):
         count_label.setMinimumWidth(80)
         layout.addWidget(count_label)
 
+        sync_btn = QPushButton("Sync")
+        sync_btn.setEnabled(False)
+        sync_btn.clicked.connect(lambda: self.sync_project(name))
+        layout.addWidget(sync_btn)
+
         delete_btn = QPushButton("Delete")
         delete_btn.clicked.connect(lambda: self.delete_project(name))
         layout.addWidget(delete_btn)
 
-        row = {"layout": layout, "name": name_label, "status": status_label, "count": count_label}
+        row = {"layout": layout, "name": name_label, "status": status_label, "count": count_label, "sync_btn": sync_btn}
         return row
 
     def start_check(self):
@@ -227,8 +247,36 @@ class MainWindow(QMainWindow):
             row["status"].setStyleSheet("color: #dc3545;")
             row["count"].setText(f"+{ahead} -{behind}")
 
+        row["sync_btn"].setEnabled(status == "behind")
+
     def on_finished(self):
         self.refresh_btn.setEnabled(True)
+
+    def sync_project(self, name):
+        idx = PROJECT_NAMES.index(name)
+        path = PROJECT_PATHS[idx]
+        row = self.project_widgets[name]
+        row["sync_btn"].setEnabled(False)
+        row["status"].setText("⏳ Syncing...")
+        row["status"].setStyleSheet("")
+        row["count"].setText("")
+
+        thread = GitSyncThread(name, path)
+        thread.sync_done.connect(self.on_sync_done)
+        thread.start()
+        self._sync_threads.append(thread)
+
+    def on_sync_done(self, name, success, message):
+        row = self.project_widgets[name]
+        if success:
+            row["status"].setText("✓ In Sync")
+            row["status"].setStyleSheet("color: #28a745;")
+            row["count"].setText("")
+        else:
+            row["status"].setText("❌ Sync failed")
+            row["status"].setStyleSheet("color: #888888;")
+            row["sync_btn"].setEnabled(True)
+            QMessageBox.warning(self, "Sync Failed", f"{name}:\n{message}")
 
     def add_project_dialog(self):
         # Use QFileDialog to get a directory

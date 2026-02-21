@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.1.0] - 2026-02-21
+
+### Added
+- Added per-project **Sync** button that runs `git pull --ff-only` in a background thread.
+- Sync button is enabled only when a repo is in "Behind" state; disabled otherwise.
+- On success the row updates to "✓ In Sync". On failure the button re-enables and a warning dialog shows the error output.
+
 ## [0.0.9] - 2026-02-21
 
 ### Fixed
