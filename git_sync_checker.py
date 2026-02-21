@@ -234,8 +234,7 @@ class MainWindow(QMainWindow):
 
             # Add the new project path to PROJECT_PATHS and PROJECT_NAMES
             # Ensure the path is stored consistently (e.g., as a user-relative path if applicable)
-            new_project_path_relative = directory.replace(os.path.expanduser("~"), "~")
-            PROJECT_PATHS.append(new_project_path_relative)
+            PROJECT_PATHS.append(directory)
             PROJECT_NAMES.append(os.path.basename(directory))
 
             # Save the updated project list
