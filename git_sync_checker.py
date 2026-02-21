@@ -6,7 +6,7 @@ from PyQt6.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout,
                              QHBoxLayout, QPushButton, QLabel, QFrame, QMessageBox, QFileDialog)
 from PyQt6.QtCore import QThread, pyqtSignal, Qt
 from typing import Any, Optional
-from PyQt6.QtGui import QFont
+from PyQt6.QtGui import QFont, QIcon
 
 __version__ = "0.0.4"
 
@@ -98,6 +98,9 @@ class MainWindow(QMainWindow):
         super().__init__()
         self.setWindowTitle(f"Git Sync Checker v{__version__}")
         self.setMinimumSize(500, 300)
+        icon_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "icon.png")
+        if os.path.exists(icon_path):
+            self.setWindowIcon(QIcon(icon_path))
 
         central_widget = QWidget()
         self.setCentralWidget(central_widget)
