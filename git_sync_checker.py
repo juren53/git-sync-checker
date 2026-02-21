@@ -98,7 +98,7 @@ class MainWindow(QMainWindow):
         super().__init__()
         self.setWindowTitle(f"Git Sync Checker v{__version__}")
         self.setMinimumSize(500, 300)
-        icon_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "icon.png")
+        icon_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "app.png")
         if os.path.exists(icon_path):
             self.setWindowIcon(QIcon(icon_path))
 
@@ -279,6 +279,8 @@ class MainWindow(QMainWindow):
 
 def main():
     app = QApplication(sys.argv)
+    app.setApplicationName("Git Sync Checker")
+    app.setDesktopFileName("git-sync-checker")
     window = MainWindow()
     window.show()
     window.start_check()

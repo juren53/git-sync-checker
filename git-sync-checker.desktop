@@ -1,0 +1,10 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=Git Sync Checker
+Comment=Monitor git sync status across multiple projects
+Exec=/home/juren/Projects/git-sync-checker/run.sh
+Icon=git-sync-checker
+Terminal=false
+Categories=Development;
+StartupNotify=true
