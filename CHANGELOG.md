@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.0.6] - 2026-02-21
+
+### Added
+- Added `git-sync-checker.desktop` file for system menu integration.
+- Installed app icon to XDG hicolor theme at all standard sizes (16, 24, 32, 48, 64, 128, 256px).
+- Added `app.setDesktopFileName()` and `app.setApplicationName()` for proper desktop environment integration.
+
+### Changed
+- Renamed `icon.png` to `app.png` per Icon_Manager_Module naming convention.
+- Updated `.desktop` file to use XDG theme icon name instead of absolute path.
+
 ## [0.0.5] - 2026-02-21
 
 ### Added
