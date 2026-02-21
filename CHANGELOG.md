@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.2.0] - 2026-02-21
+
+### Added
+- **Dirty tree detection**: `check_git_sync` now runs `git status --porcelain` and returns a `dirty` flag; repos with uncommitted changes show a `⚠` indicator next to their status (orange-yellow for synced+dirty repos).
+- **Stash-sync dialog** (`DirtyConflictDialog`): when Sync is clicked on a dirty+behind repo, a modal dialog lists the uncommitted files and offers "Stash → Pull → Restore" or "Cancel".
+- **`GitStashSyncThread`**: background thread that runs `git stash` → `git pull --ff-only` → `git stash pop`, handling all four outcome combinations (both ok, pull ok/pop failed, pull failed/stash restored, both failed).
+- **Persistent logging** (`SyncLogger`): sync events (dirty detections, user decisions, sync results) are appended to `sync_history.json`, capped at 200 entries.
+- **History dialog** (`SyncHistoryDialog`): scrollable read-only log viewer, newest-first, with colour-coded event entries; opened via a new "History" button.
+- After a successful sync the app triggers a full re-check so dirty state and commit counts reflect the true post-sync state.
+
 ## [0.1.0] - 2026-02-21
 
 ### Added

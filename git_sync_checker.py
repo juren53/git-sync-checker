@@ -11,7 +11,7 @@ from typing import Any, Optional
 from PyQt6.QtGui import QFont, QIcon
 from icon_loader import icons
 
-__version__ = "0.1.0"
+__version__ = "0.2.0"
 
 
 if getattr(sys, 'frozen', False):
