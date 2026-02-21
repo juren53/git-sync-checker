@@ -10,15 +10,10 @@ from PyQt6.QtGui import QFont
 __version__ = "0.0.1"
 
 
-PROJECT_PATHS = [
-    r"C:\Users\juren\Projects\HST-Metadata",
-    r"C:\Users\juren\Projects\MDviewer",
-    r"C:\Users\juren\Projects\JAUs-Systems",
-    r"C:\Users\juren\Projects\tag-writer",
-    r"C:\Users\juren\Projects\system-monitor",
-]
-
 PROJECT_NAMES = ["HST-Metadata", "MDviewer", "JAUs-Systems", "tag-writer", "system-monitor"]
+HOME_DIR = os.path.expanduser("~")
+PROJECTS_DIR = os.path.join(HOME_DIR, "Projects")
+PROJECT_PATHS = [os.path.join(PROJECTS_DIR, name) for name in PROJECT_NAMES]
 
 
 class GitCheckThread(QThread):
