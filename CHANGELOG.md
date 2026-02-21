@@ -4,12 +4,16 @@ All notable changes to this project will be documented in this file.
 
 ## [0.0.2] - 2026-02-20
 
+### Added
+- Introduced `config.json` for persistent project storage.
+- Implemented UI for adding new projects via `QFileDialog`.
+- Introduced `run.sh` script to automate application setup (virtual environment creation, dependency installation) and execution, improving portability and ease of use.
+
 ### Changed
 - Refactored `git_sync_checker.py` to use cross-platform path handling for project directories, replacing hardcoded Windows paths with `os.path.expanduser` and `os.path.join`.
 - Bump version to 0.0.2
-
-### Added
-- Introduced `run.sh` script to automate application setup (virtual environment creation, dependency installation) and execution, improving portability and ease of use.
+- Implemented UI for deleting existing projects.
+- Refactored project loading and UI rendering to be dynamic, supporting additions and removals.
 
 ## [0.0.1] - 2026-02-20
 
