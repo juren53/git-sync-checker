@@ -7,7 +7,7 @@ from PyQt6.QtCore import QThread, pyqtSignal, Qt
 from typing import Any, Optional
 from PyQt6.QtGui import QFont
 
-__version__ = "0.0.1"
+__version__ = "0.0.2"
 
 
 PROJECT_NAMES = ["HST-Metadata", "MDviewer", "JAUs-Systems", "tag-writer", "system-monitor"]

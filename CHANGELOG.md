@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.0.2] - 2026-02-20
+
+### Changed
+- Refactored `git_sync_checker.py` to use cross-platform path handling for project directories, replacing hardcoded Windows paths with `os.path.expanduser` and `os.path.join`.
+- Bump version to 0.0.2
+
+### Added
+- Introduced `run.sh` script to automate application setup (virtual environment creation, dependency installation) and execution, improving portability and ease of use.
+
 ## [0.0.1] - 2026-02-20
 
 ### Added
