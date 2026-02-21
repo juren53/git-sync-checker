@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.0.9] - 2026-02-21
+
+### Fixed
+- Resolved `PermissionError` on `config.json` when launching from the system menu by resolving the config path relative to the executable/script location instead of the current working directory.
+
 ## [0.0.8] - 2026-02-21
 
 ### Fixed

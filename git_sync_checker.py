@@ -9,10 +9,15 @@ from typing import Any, Optional
 from PyQt6.QtGui import QFont, QIcon
 from icon_loader import icons
 
-__version__ = "0.0.8"
+__version__ = "0.0.9"
 
 
-CONFIG_FILE = "config.json"
+if getattr(sys, 'frozen', False):
+    _base_dir = os.path.dirname(sys.executable)
+else:
+    _base_dir = os.path.dirname(os.path.abspath(__file__))
+
+CONFIG_FILE = os.path.join(_base_dir, "config.json")
 
 
 def load_projects():
