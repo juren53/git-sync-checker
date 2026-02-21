@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.0.4] - 2026-02-21
+
+### Fixed
+- Expand tilde in project path when adding a new project via the dialog, fixing false 'error' status on first check after adding a project (before app restart).
+
 ## [0.0.3] - 2026-02-21
 
 ### Fixed
