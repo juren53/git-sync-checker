@@ -7,6 +7,7 @@ from PyQt6.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout,
 from PyQt6.QtCore import QThread, pyqtSignal, Qt
 from typing import Any, Optional
 from PyQt6.QtGui import QFont, QIcon
+from icon_loader import icons
 
 __version__ = "0.0.6"
 
@@ -98,9 +99,7 @@ class MainWindow(QMainWindow):
         super().__init__()
         self.setWindowTitle(f"Git Sync Checker v{__version__}")
         self.setMinimumSize(500, 300)
-        icon_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "app.png")
-        if os.path.exists(icon_path):
-            self.setWindowIcon(QIcon(icon_path))
+        self.setWindowIcon(icons.app_icon())
 
         central_widget = QWidget()
         self.setCentralWidget(central_widget)
@@ -281,8 +280,10 @@ def main():
     app = QApplication(sys.argv)
     app.setApplicationName("Git Sync Checker")
     app.setDesktopFileName("git-sync-checker")
+    app.setWindowIcon(icons.app_icon())
     window = MainWindow()
     window.show()
+    icons.set_taskbar_icon(window, app_id="com.juren.git-sync-checker")
     window.start_check()
     sys.exit(app.exec())
 
