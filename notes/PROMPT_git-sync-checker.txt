@@ -1,0 +1,10 @@
+I would like a Python PYQt6 program that tells me if these projects 
+with git repositories are in sync with their corresponding GitHub remote repos:
+
+- HST-Metadata
+- MDviewer
+- JAUs-Systems
+- tag-writer
+- system-monitor
+
+Call the project chk-repos.py
