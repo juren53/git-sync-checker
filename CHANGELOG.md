@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.0.5] - 2026-02-21
+
+### Added
+- Added `Icon_Manager_Module` to the default project list.
+- Added application window icon (`icon.png`) sourced from `Icon_Manager_Module/workshop/ICON_check-2.png`.
+
 ## [0.0.4] - 2026-02-21
 
 ### Fixed
