@@ -8,7 +8,7 @@ from PyQt6.QtCore import QThread, pyqtSignal, Qt
 from typing import Any, Optional
 from PyQt6.QtGui import QFont
 
-__version__ = "0.0.2"
+__version__ = "0.0.3"
 
 
 CONFIG_FILE = "config.json"

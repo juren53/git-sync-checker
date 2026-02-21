@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.0.3] - 2026-02-21
+
+### Fixed
+- Use `@{u}` instead of `origin/HEAD` when comparing against the upstream branch, fixing false 'error' status for repos where `origin/HEAD` is not set.
+
 ## [0.0.2] - 2026-02-20
 
 ### Added
