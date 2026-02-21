@@ -9,7 +9,7 @@ from typing import Any, Optional
 from PyQt6.QtGui import QFont, QIcon
 from icon_loader import icons
 
-__version__ = "0.0.7"
+__version__ = "0.0.8"
 
 
 CONFIG_FILE = "config.json"

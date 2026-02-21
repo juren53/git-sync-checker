@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.0.8] - 2026-02-21
+
+### Fixed
+- Suppressed console window flashes on Windows during git subprocess calls by adding `CREATE_NO_WINDOW` flag to `subprocess.run`.
+
+### Added
+- Added `git-sync-checker.spec` for reproducible PyInstaller builds.
+- Added `build/` and `dist/` to `.gitignore`.
+
 ## [0.0.7] - 2026-02-21
 
 ### Added
