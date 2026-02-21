@@ -49,12 +49,16 @@ class GitCheckThread(QThread):
 
 def run_git_command(repo_path, *args):
     try:
+        kwargs = {}
+        if sys.platform.startswith("win"):
+            kwargs["creationflags"] = subprocess.CREATE_NO_WINDOW
         result = subprocess.run(
             ["git", *args],
             cwd=repo_path,
             capture_output=True,
             text=True,
-            timeout=30
+            timeout=30,
+            **kwargs
         )
         return result.returncode, result.stdout.strip(), result.stderr.strip()
     except Exception as e:
