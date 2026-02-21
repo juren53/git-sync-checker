@@ -427,6 +427,8 @@ class MainWindow(QMainWindow):
         row = self.project_widgets[name]
         self._dirty_state[name] = dirty
 
+        row["status"].setToolTip("")
+
         if status == "error":
             row["status"].setText("❌ Error")
             row["status"].setStyleSheet("color: #888888;")
@@ -504,10 +506,12 @@ class MainWindow(QMainWindow):
             row["status"].setStyleSheet("")
             self.start_check()
         else:
-            row["status"].setText("❌ Sync failed")
+            row["status"].setText("❌ Sync failed — ask Claude Code?")
             row["status"].setStyleSheet("color: #888888;")
+            row["status"].setToolTip(message)
             row["sync_btn"].setEnabled(True)
-            QMessageBox.warning(self, "Sync Failed", f"{name}:\n{message}")
+            QMessageBox.warning(self, "Sync Failed",
+                                f"{name}:\n{message}\n\nTip: ask Claude Code to help fix this.")
 
     def add_project_dialog(self):
         # Use QFileDialog to get a directory
