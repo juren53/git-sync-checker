@@ -13,7 +13,7 @@ from icon_loader import icons
 from pyqt_app_info import AppIdentity, gather_info
 from pyqt_app_info.qt import AboutDialog
 
-__version__ = "0.2.2"
+__version__ = "0.2.3"
 
 
 if getattr(sys, 'frozen', False):

@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.2.3] - 2026-02-22
+
+### Added
+- **Menu bar** (File | Edit | Help) at the top of the main window.
+- **File > Exit**: closes the application.
+- **Edit > Preferences**: placeholder item (not yet implemented).
+- **Help > Changelog**: opens `CHANGELOG.md` in a scrollable dialog.
+- **Help > User Guide**: opens `README.md` in a scrollable dialog.
+- **Help > About**: full About dialog powered by the `pyqt-app-info` module (`AppIdentity`, `gather_info`, `AboutDialog`), showing app version, description, feature list, and runtime environment details.
+
+### Changed
+- Renamed per-project **"Ask Claude"** button to **"Get Help"**.
+
 ## [0.2.2] - 2026-02-21
 
 ### Added
