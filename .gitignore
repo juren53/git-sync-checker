@@ -6,3 +6,5 @@ build/
 dist/
 sync_history.json
 config.json
+.claude/
+venv/

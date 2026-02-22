@@ -1,2 +1,2 @@
 PyQt6>=6.5.0
-pyqt-app-info @ file:///home/juren/Projects/pyqt-app-info
+-e ../pyqt-app-info
