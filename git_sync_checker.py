@@ -399,7 +399,7 @@ def _show_text_file_dialog(parent, title, file_path):
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("Git Sync Checker")
+        self.setWindowTitle(f"Git Sync Checker v{__version__}")
         self.setMinimumSize(500, 300)
         self.setWindowIcon(icons.app_icon())
         self._setup_menu_bar()
