@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.2.5] - 2026-02-22
+
+### Added
+- **Theme support** via the ThemeManager module: five built-in themes available — Dark, Light, Solarized Light, Dracula, and GitHub.
+- **Theme selector** in Preferences dialog (`Edit > Preferences`); selected theme is persisted in `config.json` and applied immediately on save.
+- Theme is applied on startup using Qt Fusion style with a fully customized `QPalette`.
+
 ## [0.2.4] - 2026-02-22
 
 ### Changed

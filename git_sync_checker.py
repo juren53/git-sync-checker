@@ -15,7 +15,7 @@ from pyqt_app_info import AppIdentity, gather_info
 from pyqt_app_info.qt import AboutDialog
 from theme_manager import get_theme_registry, get_fusion_palette
 
-__version__ = "0.2.4"
+__version__ = "0.2.5"
 
 
 if getattr(sys, 'frozen', False):
