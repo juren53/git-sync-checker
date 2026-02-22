@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.2.2] - 2026-02-21
+
+### Added
+- **Ask Claude button** per project row: gathers context (current status, last sync error, uncommitted files, `git status`, recent commits) and calls `claude --print` in a background thread (`ClaudeResponseThread`).
+- **Claude response dialog** (`ClaudeResponseDialog`): scrollable, read-only monospace text area showing Claude's suggestion, with Copy and Close buttons.
+- Button shows `⏳ Asking...` while the request is in flight and re-enables on completion.
+- Graceful error handling for missing CLI (`claude` not on PATH), timeouts (60 s), and non-zero exit codes.
+
 ## [0.2.1] - 2026-02-21
 
 ### Fixed
