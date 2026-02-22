@@ -8,8 +8,10 @@ from PyQt6.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout,
                              QDialog, QDialogButtonBox, QScrollArea, QTextEdit)
 from PyQt6.QtCore import QThread, pyqtSignal, Qt
 from typing import Any, Optional
-from PyQt6.QtGui import QFont, QIcon
+from PyQt6.QtGui import QFont, QIcon, QAction
 from icon_loader import icons
+from pyqt_app_info import AppIdentity, gather_info
+from pyqt_app_info.qt import AboutDialog
 
 __version__ = "0.2.2"
 
@@ -374,12 +376,33 @@ class ClaudeResponseDialog(QDialog):
         layout.addLayout(btn_layout)
 
 
+def _show_text_file_dialog(parent, title, file_path):
+    dlg = QDialog(parent)
+    dlg.setWindowTitle(title)
+    dlg.setMinimumSize(620, 520)
+    layout = QVBoxLayout(dlg)
+    text_area = QTextEdit()
+    text_area.setReadOnly(True)
+    text_area.setStyleSheet("font-family: monospace; font-size: 12px;")
+    try:
+        with open(file_path, "r", encoding="utf-8") as f:
+            text_area.setPlainText(f.read())
+    except Exception as e:
+        text_area.setPlainText(f"Could not load file:\n{e}")
+    layout.addWidget(text_area)
+    close_btn = QPushButton("Close")
+    close_btn.clicked.connect(dlg.accept)
+    layout.addWidget(close_btn)
+    dlg.exec()
+
+
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
         self.setWindowTitle(f"Git Sync Checker v{__version__}")
         self.setMinimumSize(500, 300)
         self.setWindowIcon(icons.app_icon())
+        self._setup_menu_bar()
 
         central_widget = QWidget()
         self.setCentralWidget(central_widget)
@@ -470,7 +493,7 @@ class MainWindow(QMainWindow):
         sync_btn.clicked.connect(lambda: self.sync_project(name))
         layout.addWidget(sync_btn)
 
-        claude_btn = QPushButton("Ask Claude")
+        claude_btn = QPushButton("Get Help")
         claude_btn.clicked.connect(lambda: self.ask_claude(name))
         layout.addWidget(claude_btn)
 
@@ -622,7 +645,7 @@ class MainWindow(QMainWindow):
     def on_claude_response(self, name, success, response):
         row = self.project_widgets[name]
         row["claude_btn"].setEnabled(True)
-        row["claude_btn"].setText("Ask Claude")
+        row["claude_btn"].setText("Get Help")
         if success:
             ClaudeResponseDialog(name, response, parent=self).exec()
         else:
@@ -685,6 +708,62 @@ class MainWindow(QMainWindow):
 
     def show_history_dialog(self):
         SyncHistoryDialog(parent=self).exec()
+
+    # ------------------------------------------------------------------ menu
+
+    def _setup_menu_bar(self):
+        menu_bar = self.menuBar()
+
+        # File
+        file_menu = menu_bar.addMenu("&File")
+        exit_action = QAction("E&xit", self)
+        exit_action.triggered.connect(self.close)
+        file_menu.addAction(exit_action)
+
+        # Edit
+        edit_menu = menu_bar.addMenu("&Edit")
+        prefs_action = QAction("&Preferences", self)
+        prefs_action.triggered.connect(self._action_preferences)
+        edit_menu.addAction(prefs_action)
+
+        # Help
+        help_menu = menu_bar.addMenu("&Help")
+        changelog_action = QAction("&Changelog", self)
+        changelog_action.triggered.connect(self._action_changelog)
+        help_menu.addAction(changelog_action)
+        userguide_action = QAction("&User Guide", self)
+        userguide_action.triggered.connect(self._action_user_guide)
+        help_menu.addAction(userguide_action)
+        help_menu.addSeparator()
+        about_action = QAction("&About", self)
+        about_action.triggered.connect(self._action_about)
+        help_menu.addAction(about_action)
+
+    def _action_preferences(self):
+        QMessageBox.information(self, "Preferences", "Preferences are not yet implemented.")
+
+    def _action_changelog(self):
+        _show_text_file_dialog(self, "Changelog", os.path.join(_base_dir, "CHANGELOG.md"))
+
+    def _action_user_guide(self):
+        _show_text_file_dialog(self, "User Guide", os.path.join(_base_dir, "README.md"))
+
+    def _action_about(self):
+        identity = AppIdentity(
+            name="Git Sync Checker",
+            short_name="GSC",
+            version=__version__,
+            description="A PyQt6 desktop app that monitors git repository sync status.",
+            features=[
+                "Monitor multiple git repositories",
+                "Sync behind repos with one click",
+                "Stash \u2192 Pull \u2192 Restore for dirty repos",
+                "Get Help via Claude Code integration",
+                "Persistent sync history log",
+            ],
+        )
+        info = gather_info(identity, caller_file=__file__)
+        AboutDialog(info, parent=self).exec()
 
 
 def main():
