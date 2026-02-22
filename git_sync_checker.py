@@ -5,13 +5,15 @@ import json
 import datetime
 from PyQt6.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout,
                              QHBoxLayout, QPushButton, QLabel, QFrame, QMessageBox, QFileDialog,
-                             QDialog, QDialogButtonBox, QScrollArea, QTextEdit)
-from PyQt6.QtCore import QThread, pyqtSignal, Qt
+                             QDialog, QDialogButtonBox, QScrollArea, QTextEdit,
+                             QSpinBox, QCheckBox, QFormLayout, QComboBox)
+from PyQt6.QtCore import QThread, pyqtSignal, Qt, QTimer
 from typing import Any, Optional
 from PyQt6.QtGui import QFont, QIcon, QAction
 from icon_loader import icons
 from pyqt_app_info import AppIdentity, gather_info
 from pyqt_app_info.qt import AboutDialog
+from theme_manager import get_theme_registry, get_fusion_palette
 
 __version__ = "0.2.4"
 
@@ -39,11 +41,37 @@ def load_projects():
         return paths, names
 
 def save_projects(paths):
+    data = {}
+    if os.path.exists(CONFIG_FILE):
+        with open(CONFIG_FILE, "r") as f:
+            data = json.load(f)
+    home_dir = os.path.expanduser("~")
+    data["projects"] = [p.replace(home_dir, "~") for p in paths]
     with open(CONFIG_FILE, "w") as f:
-        # Storing with ~ for cross-platform friendliness
-        home_dir = os.path.expanduser("~")
-        project_paths_to_save = [p.replace(home_dir, "~") for p in paths]
-        json.dump({"projects": project_paths_to_save}, f, indent=4)
+        json.dump(data, f, indent=4)
+
+
+_DEFAULT_PREFS = {"auto_refresh_interval": 0, "auto_check_on_launch": True, "theme": "dark"}
+
+
+def load_preferences():
+    if not os.path.exists(CONFIG_FILE):
+        return dict(_DEFAULT_PREFS)
+    with open(CONFIG_FILE, "r") as f:
+        data = json.load(f)
+    prefs = dict(_DEFAULT_PREFS)
+    prefs.update(data.get("preferences", {}))
+    return prefs
+
+
+def save_preferences(prefs):
+    data = {}
+    if os.path.exists(CONFIG_FILE):
+        with open(CONFIG_FILE, "r") as f:
+            data = json.load(f)
+    data["preferences"] = prefs
+    with open(CONFIG_FILE, "w") as f:
+        json.dump(data, f, indent=4)
 
 
 PROJECT_PATHS, PROJECT_NAMES = load_projects()
@@ -376,6 +404,55 @@ class ClaudeResponseDialog(QDialog):
         layout.addLayout(btn_layout)
 
 
+class PreferencesDialog(QDialog):
+    def __init__(self, prefs, parent=None):
+        super().__init__(parent)
+        self.setWindowTitle("Preferences")
+        self.setMinimumWidth(360)
+        layout = QVBoxLayout(self)
+
+        form = QFormLayout()
+        form.setRowWrapPolicy(QFormLayout.RowWrapPolicy.WrapLongRows)
+
+        self.auto_refresh_spin = QSpinBox()
+        self.auto_refresh_spin.setRange(0, 120)
+        self.auto_refresh_spin.setValue(prefs.get("auto_refresh_interval", 0))
+        self.auto_refresh_spin.setSpecialValueText("Disabled")
+        self.auto_refresh_spin.setSuffix(" min")
+        form.addRow("Auto-refresh interval:", self.auto_refresh_spin)
+
+        self.auto_check_cb = QCheckBox()
+        self.auto_check_cb.setChecked(prefs.get("auto_check_on_launch", True))
+        form.addRow("Auto-check on launch:", self.auto_check_cb)
+
+        self.theme_combo = QComboBox()
+        registry = get_theme_registry()
+        self._theme_names = []
+        for name, theme in registry.get_all_themes().items():
+            self._theme_names.append(name)
+            self.theme_combo.addItem(theme.display_name)
+        current_theme = prefs.get("theme", "dark")
+        if current_theme in self._theme_names:
+            self.theme_combo.setCurrentIndex(self._theme_names.index(current_theme))
+        form.addRow("Theme:", self.theme_combo)
+
+        layout.addLayout(form)
+
+        btn_box = QDialogButtonBox(
+            QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel
+        )
+        btn_box.accepted.connect(self.accept)
+        btn_box.rejected.connect(self.reject)
+        layout.addWidget(btn_box)
+
+    def get_preferences(self):
+        return {
+            "auto_refresh_interval": self.auto_refresh_spin.value(),
+            "auto_check_on_launch": self.auto_check_cb.isChecked(),
+            "theme": self._theme_names[self.theme_combo.currentIndex()],
+        }
+
+
 def _show_text_file_dialog(parent, title, file_path):
     dlg = QDialog(parent)
     dlg.setWindowTitle(title)
@@ -442,6 +519,12 @@ class MainWindow(QMainWindow):
         self._stash_threads: list[GitStashSyncThread] = []
         self._claude_threads: list[ClaudeResponseThread] = []
         self._dirty_state: dict[str, bool] = {}
+
+        self._prefs = load_preferences()
+        self._refresh_timer = QTimer(self)
+        self._refresh_timer.timeout.connect(self.start_check)
+        self._apply_auto_refresh()
+        self._apply_theme()
 
     def _clear_project_ui(self):
         # Remove all widgets from self.status_layout
@@ -739,8 +822,24 @@ class MainWindow(QMainWindow):
         about_action.triggered.connect(self._action_about)
         help_menu.addAction(about_action)
 
+    def _apply_auto_refresh(self):
+        self._refresh_timer.stop()
+        interval_min = self._prefs.get("auto_refresh_interval", 0)
+        if interval_min > 0:
+            self._refresh_timer.start(interval_min * 60 * 1000)
+
+    def _apply_theme(self):
+        theme_name = self._prefs.get("theme", "dark")
+        palette = get_fusion_palette(theme_name)
+        QApplication.instance().setPalette(palette)
+
     def _action_preferences(self):
-        QMessageBox.information(self, "Preferences", "Preferences are not yet implemented.")
+        dlg = PreferencesDialog(self._prefs, parent=self)
+        if dlg.exec() == QDialog.DialogCode.Accepted:
+            self._prefs = dlg.get_preferences()
+            save_preferences(self._prefs)
+            self._apply_auto_refresh()
+            self._apply_theme()
 
     def _action_changelog(self):
         _show_text_file_dialog(self, "Changelog", os.path.join(_base_dir, "CHANGELOG.md"))
@@ -768,13 +867,15 @@ class MainWindow(QMainWindow):
 
 def main():
     app = QApplication(sys.argv)
+    app.setStyle("Fusion")
     app.setApplicationName("Git Sync Checker")
     app.setDesktopFileName("git-sync-checker")
     app.setWindowIcon(icons.app_icon())
     window = MainWindow()
     window.show()
     icons.set_taskbar_icon(window, app_id="com.juren.git-sync-checker")
-    window.start_check()
+    if window._prefs.get("auto_check_on_launch", True):
+        window.start_check()
     sys.exit(app.exec())
 
 
