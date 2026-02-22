@@ -6,16 +6,17 @@ import datetime
 from PyQt6.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout,
                              QHBoxLayout, QPushButton, QLabel, QFrame, QMessageBox, QFileDialog,
                              QDialog, QDialogButtonBox, QScrollArea, QTextEdit,
-                             QSpinBox, QCheckBox, QFormLayout, QComboBox)
+                             QSpinBox, QCheckBox, QFormLayout, QComboBox, QGridLayout)
 from PyQt6.QtCore import QThread, pyqtSignal, Qt, QTimer
 from typing import Any, Optional
-from PyQt6.QtGui import QFont, QIcon, QAction
+from PyQt6.QtGui import QFont, QFontMetrics, QIcon, QAction
 from icon_loader import icons
+from zoom_manager import ZoomManager
 from pyqt_app_info import AppIdentity, gather_info
 from pyqt_app_info.qt import AboutDialog
 from theme_manager import get_theme_registry, get_fusion_palette
 
-__version__ = "0.2.5"
+__version__ = "0.2.6"
 
 
 if getattr(sys, 'frozen', False):
@@ -492,7 +493,9 @@ class MainWindow(QMainWindow):
 
         self.status_frame = QFrame()
         self.status_frame.setFrameShape(QFrame.Shape.StyledPanel)
-        self.status_layout = QVBoxLayout(self.status_frame)
+        self.status_layout = QGridLayout(self.status_frame)
+        self.status_layout.setHorizontalSpacing(10)
+        self.status_layout.setColumnStretch(1, 1)
         main_layout.addWidget(self.status_frame)
 
         self.project_widgets: dict[str, dict[str, Any]] = {}
@@ -526,65 +529,49 @@ class MainWindow(QMainWindow):
         self._apply_auto_refresh()
         self._apply_theme()
 
+        self.zoom_manager = ZoomManager.instance()
+        self.zoom_manager.zoom_changed.connect(self._on_zoom_changed)
+
     def _clear_project_ui(self):
-        # Remove all widgets from self.status_layout
         while self.status_layout.count():
             item = self.status_layout.takeAt(0)
             if item.widget():
                 item.widget().deleteLater()
-            elif item.layout():
-                # Recursively clear sub-layouts
-                self._clear_layout_widgets(item.layout())
-                item.layout().deleteLater()
         self.project_widgets.clear()
-
-    def _clear_layout_widgets(self, layout):
-        while layout.count():
-            item = layout.takeAt(0)
-            if item.widget():
-                item.widget().deleteLater()
-            elif item.layout():
-                self._clear_layout_widgets(item.layout())
-                item.layout().deleteLater()
 
 
     def _initialize_project_ui(self):
-        self._clear_project_ui() # Clear existing UI elements first
-        for name in PROJECT_NAMES:
-            row = self.create_project_row(name)
+        self._clear_project_ui()
+        fm = QFontMetrics(QApplication.instance().font())
+        max_name_width = max((fm.horizontalAdvance(n) for n in PROJECT_NAMES), default=80) + 20
+        for i, name in enumerate(PROJECT_NAMES):
+            row = self.create_project_row(name, max_name_width)
             self.project_widgets[name] = row
-            self.status_layout.addLayout(row["layout"])
+            for col, widget in enumerate(row["widgets"]):
+                self.status_layout.addWidget(widget, i, col)
 
 
-    def create_project_row(self, name):
-        layout = QHBoxLayout()
-
+    def create_project_row(self, name, name_width):
         name_label = QLabel(name)
-        name_label.setMinimumWidth(150)
-        layout.addWidget(name_label)
+        name_label.setFixedWidth(name_width)
 
         status_label = QLabel("⏳ Checking...")
-        status_label.setMinimumWidth(100)
-        layout.addWidget(status_label)
 
         count_label = QLabel("")
-        count_label.setMinimumWidth(80)
-        layout.addWidget(count_label)
+        count_label.setFixedWidth(60)
 
         sync_btn = QPushButton("Sync")
         sync_btn.setEnabled(False)
         sync_btn.clicked.connect(lambda: self.sync_project(name))
-        layout.addWidget(sync_btn)
 
         claude_btn = QPushButton("Get Help")
         claude_btn.clicked.connect(lambda: self.ask_claude(name))
-        layout.addWidget(claude_btn)
 
-        delete_btn = QPushButton("Delete")
+        delete_btn = QPushButton("Remove")
         delete_btn.clicked.connect(lambda: self.delete_project(name))
-        layout.addWidget(delete_btn)
 
-        row = {"layout": layout, "name": name_label, "status": status_label, "count": count_label, "sync_btn": sync_btn, "claude_btn": claude_btn}
+        widgets = [name_label, status_label, count_label, sync_btn, claude_btn, delete_btn]
+        row = {"widgets": widgets, "name": name_label, "status": status_label, "count": count_label, "sync_btn": sync_btn, "claude_btn": claude_btn}
         return row
 
     def start_check(self):
@@ -763,8 +750,8 @@ class MainWindow(QMainWindow):
             self.start_check()
 
     def delete_project(self, name):
-        reply = QMessageBox.question(self, "Delete Project",
-                                     f"Are you sure you want to delete project '{name}'?",
+        reply = QMessageBox.question(self, "Remove Project",
+                                     f"Are you sure you want to remove project '{name}'?",
                                      QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
                                      QMessageBox.StandardButton.No)
         if reply == QMessageBox.StandardButton.Yes:
@@ -785,7 +772,7 @@ class MainWindow(QMainWindow):
                 # Refresh the UI
                 self._initialize_project_ui()
 
-                QMessageBox.information(self, "Project Deleted", f"Project '{name}' has been deleted.")
+                QMessageBox.information(self, "Project Removed", f"Project '{name}' has been removed.")
             except ValueError:
                 QMessageBox.warning(self, "Error", f"Project '{name}' not found.")
 
@@ -808,6 +795,30 @@ class MainWindow(QMainWindow):
         prefs_action = QAction("&Preferences", self)
         prefs_action.triggered.connect(self._action_preferences)
         edit_menu.addAction(prefs_action)
+
+        # View
+        view_menu = menu_bar.addMenu("&View")
+
+        zoom_in_action = QAction("Zoom &In", self)
+        zoom_in_action.setShortcut("Ctrl++")
+        zoom_in_action.triggered.connect(self._zoom_in)
+        view_menu.addAction(zoom_in_action)
+
+        zoom_in_alt = QAction(self)
+        zoom_in_alt.setShortcut("Ctrl+=")
+        zoom_in_alt.triggered.connect(self._zoom_in)
+        self.addAction(zoom_in_alt)
+
+        zoom_out_action = QAction("Zoom &Out", self)
+        zoom_out_action.setShortcut("Ctrl+-")
+        zoom_out_action.triggered.connect(self._zoom_out)
+        view_menu.addAction(zoom_out_action)
+
+        view_menu.addSeparator()
+        zoom_reset_action = QAction("&Reset Zoom", self)
+        zoom_reset_action.setShortcut("Ctrl+0")
+        zoom_reset_action.triggered.connect(self._zoom_reset)
+        view_menu.addAction(zoom_reset_action)
 
         # Help
         help_menu = menu_bar.addMenu("&Help")
@@ -847,6 +858,39 @@ class MainWindow(QMainWindow):
     def _action_user_guide(self):
         _show_text_file_dialog(self, "User Guide", os.path.join(_base_dir, "README.md"))
 
+    def _zoom_in(self):
+        app = QApplication.instance()
+        self.zoom_manager.zoom_in(app)
+
+    def _zoom_out(self):
+        app = QApplication.instance()
+        self.zoom_manager.zoom_out(app)
+
+    def _zoom_reset(self):
+        app = QApplication.instance()
+        self.zoom_manager.reset_zoom(app)
+
+    def _on_zoom_changed(self, factor: float):
+        self._initialize_project_ui()
+        zoom_pct = self.zoom_manager.get_zoom_percentage()
+        self.statusBar().showMessage(f"Zoom: {zoom_pct}%", 2000)
+
+    def wheelEvent(self, event):
+        if event.modifiers() & Qt.KeyboardModifier.ControlModifier:
+            app = QApplication.instance()
+            if event.angleDelta().y() > 0:
+                self.zoom_manager.zoom_in(app)
+            elif event.angleDelta().y() < 0:
+                self.zoom_manager.zoom_out(app)
+            event.accept()
+        else:
+            super().wheelEvent(event)
+
+    def closeEvent(self, event):
+        app = QApplication.instance()
+        self.zoom_manager.save_zoom_preference(app)
+        event.accept()
+
     def _action_about(self):
         identity = AppIdentity(
             name="Git Sync Checker",
@@ -868,9 +912,15 @@ class MainWindow(QMainWindow):
 def main():
     app = QApplication(sys.argv)
     app.setStyle("Fusion")
+    app.setOrganizationName("juren")
     app.setApplicationName("Git Sync Checker")
     app.setDesktopFileName("git-sync-checker")
     app.setWindowIcon(icons.app_icon())
+
+    zoom_mgr = ZoomManager.instance()
+    zoom_mgr.initialize_base_font(app)
+    zoom_mgr.apply_saved_zoom(app)
+
     window = MainWindow()
     window.show()
     icons.set_taskbar_icon(window, app_id="com.juren.git-sync-checker")

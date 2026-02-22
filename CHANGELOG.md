@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.2.6] - 2026-02-22
+
+### Added
+- **Zoom in/out** via View menu (Ctrl++, Ctrl+-, Ctrl+0) and Ctrl+Mouse Wheel, powered by the zoom-manager module.
+- Zoom level persists across sessions via QSettings.
+- Status bar shows current zoom percentage on change.
+
+### Changed
+- Renamed **"Delete"** button to **"Remove"** (button label and all related dialogs).
+- **Improved column alignment**: project rows now use a `QGridLayout` instead of independent `QHBoxLayout` rows; name column width is computed dynamically from the longest project name; count column tightened from 80px to 60px.
+
 ## [0.2.5] - 2026-02-22
 
 ### Added
