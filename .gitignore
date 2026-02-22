@@ -4,3 +4,4 @@ __pycache__/
 nohup.out
 build/
 dist/
+sync_history.json
