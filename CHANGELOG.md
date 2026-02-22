@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.2.7] - 2026-02-22
+
+### Changed
+- **Help > User Guide** and **Help > Changelog** now open the `.md` files in the system's default markdown viewer/editor instead of an in-app plaintext dialog.
+- **Help > About** dialog font scaled up 15% for readability.
+- **About dialog system info** made more human-readable: friendlier labels ("Running as", "App location", "Operating System"), compact single-line tool entries, removed hardcoded 9pt font override.
+- **README.md** rewritten to reflect all current features, installation methods, usage guide, keyboard shortcuts, and up-to-date requirements.
+
 ## [0.2.6] - 2026-02-22
 
 ### Added

@@ -7,7 +7,8 @@ from PyQt6.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout,
                              QHBoxLayout, QPushButton, QLabel, QFrame, QMessageBox, QFileDialog,
                              QDialog, QDialogButtonBox, QScrollArea, QTextEdit,
                              QSpinBox, QCheckBox, QFormLayout, QComboBox, QGridLayout)
-from PyQt6.QtCore import QThread, pyqtSignal, Qt, QTimer
+from PyQt6.QtCore import QThread, pyqtSignal, Qt, QTimer, QUrl
+from PyQt6.QtGui import QDesktopServices
 from typing import Any, Optional
 from PyQt6.QtGui import QFont, QFontMetrics, QIcon, QAction
 from icon_loader import icons
@@ -16,7 +17,7 @@ from pyqt_app_info import AppIdentity, gather_info
 from pyqt_app_info.qt import AboutDialog
 from theme_manager import get_theme_registry, get_fusion_palette
 
-__version__ = "0.2.6"
+__version__ = "0.2.7"
 
 
 if getattr(sys, 'frozen', False):
@@ -853,10 +854,12 @@ class MainWindow(QMainWindow):
             self._apply_theme()
 
     def _action_changelog(self):
-        _show_text_file_dialog(self, "Changelog", os.path.join(_base_dir, "CHANGELOG.md"))
+        changelog_path = os.path.join(_base_dir, "CHANGELOG.md")
+        QDesktopServices.openUrl(QUrl.fromLocalFile(changelog_path))
 
     def _action_user_guide(self):
-        _show_text_file_dialog(self, "User Guide", os.path.join(_base_dir, "README.md"))
+        readme_path = os.path.join(_base_dir, "README.md")
+        QDesktopServices.openUrl(QUrl.fromLocalFile(readme_path))
 
     def _zoom_in(self):
         app = QApplication.instance()
@@ -906,7 +909,11 @@ class MainWindow(QMainWindow):
             ],
         )
         info = gather_info(identity, caller_file=__file__)
-        AboutDialog(info, parent=self).exec()
+        dlg = AboutDialog(info, parent=self)
+        font = dlg.font()
+        font.setPointSize(int(font.pointSize() * 1.15))
+        dlg.setFont(font)
+        dlg.exec()
 
 
 def main():

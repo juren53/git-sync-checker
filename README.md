@@ -1,42 +1,128 @@
-# Git Sync Checker
+# Git Sync Checker (GSC)
 
-A PyQt6 desktop application that checks if local git repositories are in sync with their GitHub remotes.
+A PyQt6 desktop application that monitors whether your local git repositories are in sync with their remotes. Add any number of projects, see at a glance which ones need attention, and sync them with a single click.
+
+![Python](https://img.shields.io/badge/Python-3.8%2B-blue)
+![PyQt6](https://img.shields.io/badge/GUI-PyQt6-green)
+![License](https://img.shields.io/badge/License-MIT-yellow)
 
 ## Features
 
-- Monitor sync status of multiple git repositories
-- Shows ahead/behind commit counts
-- Color-coded status indicators:
-  - Green: In sync with remote
-  - Blue: Ahead of remote (local commits not pushed)
-  - Orange: Behind remote (remote has new commits)
-  - Red: Diverged (both have different commits)
-- Refresh on demand via button click
+- **Multi-repo monitoring** — track any number of local git repositories from a single window
+- **Color-coded status** — instantly see which repos are synced, ahead, behind, or diverged
+- **One-click sync** — pull behind repos with a single button press (`git pull --ff-only`)
+- **Dirty tree handling** — detects uncommitted changes and offers Stash → Pull → Restore workflow
+- **Get Help (Claude Code)** — ask Claude Code for diagnosis and fix suggestions on problematic repos
+- **Sync history log** — persistent event log (sync attempts, dirty detections, user actions) viewable via History dialog
+- **Zoom in/out** — scale the UI via View menu (`Ctrl++` / `Ctrl+-` / `Ctrl+0`) or `Ctrl+Mouse Wheel`; zoom level persists across sessions
+- **Theme support** — five built-in themes (Dark, Light, Solarized Light, Dracula, GitHub) selectable via Edit > Preferences
+- **Auto-refresh** — optional timed re-check interval, configurable in Preferences
+- **Desktop integration** — `.desktop` file and XDG icon installation for Linux system menus
+
+## Status Indicators
+
+| Symbol | Meaning | Color |
+|--------|---------|-------|
+| ✓ In Sync | Local and remote are identical | Green |
+| ↑ Ahead | Local has unpushed commits | Blue |
+| ↓ Behind | Remote has new commits (Sync enabled) | Orange |
+| ⇅ Diverged | Both sides have different commits | Red |
+| ⚠ | Uncommitted local changes detected | Yellow |
+| ❌ Error | Could not check repo (missing, no remote, etc.) | Grey |
 
 ## Installation
 
+### Run from source
+
 ```bash
-pip install -r requirements.txt
+git clone https://github.com/juren53/git-sync-checker.git
+cd git-sync-checker
+./run.sh
 ```
+
+`run.sh` will create a virtual environment, install dependencies, and launch the app.
+
+### Build a standalone binary
+
+Requires [PyInstaller](https://pyinstaller.org/):
+
+```bash
+pip install pyinstaller
+pyinstaller git-sync-checker.spec
+```
+
+The compiled binary is written to `dist/git-sync-checker`. To install it:
+
+```bash
+cp dist/git-sync-checker ~/.local/bin/
+```
+
+### Desktop menu entry (Linux)
+
+Copy the `.desktop` file and install the icon:
+
+```bash
+cp git-sync-checker.desktop ~/.local/share/applications/
+```
+
+Icons are installed to the XDG hicolor theme at standard sizes (16–256px) from `resources/icons/`.
 
 ## Usage
 
+Launch the app from the system menu or from the terminal:
+
 ```bash
-python git_sync_checker.py
+python git_sync_checker.py        # from source
+git-sync-checker                  # compiled binary
 ```
+
+### Adding and removing projects
+
+- Click **Add Project** and select any local git repository directory.
+- Click **Remove** on a project row to stop tracking it.
+- Projects are stored in `config.json` alongside the application.
+
+### Syncing a behind repo
+
+When a repo is behind its remote, the **Sync** button activates. Clicking it runs `git pull --ff-only`.
+
+If the repo has uncommitted changes (⚠), a dialog offers:
+- **Stash → Pull → Restore** — stashes changes, pulls, then pops the stash
+- **Cancel** — abort the sync
+
+### Keyboard shortcuts
+
+| Shortcut | Action |
+|----------|--------|
+| `Ctrl++` or `Ctrl+=` | Zoom in |
+| `Ctrl+-` | Zoom out |
+| `Ctrl+0` | Reset zoom to 100% |
+| `Ctrl+Mouse Wheel` | Zoom in/out |
+
+### Menu bar
+
+- **File** — Exit
+- **Edit** — Preferences (auto-refresh interval, auto-check on launch, theme)
+- **View** — Zoom In, Zoom Out, Reset Zoom
+- **Help** — Changelog, User Guide, About
+
+## Configuration
+
+All settings are stored in `config.json` in the application directory:
+
+- **projects** — list of tracked repository paths
+- **preferences** — auto-refresh interval (minutes, 0 = off), auto-check on launch, theme name
+
+Zoom level is stored separately via Qt's `QSettings`.
 
 ## Requirements
 
 - Python 3.8+
-- PyQt6
-
-## Projects Monitored
-
-- HST-Metadata
-- MDviewer
-- JAUs-Systems
-- tag-writer
-- system-monitor
+- PyQt6 >= 6.5.0
+- Git (accessible on `PATH`)
+- [pyqt-app-info](https://github.com/juren53/pyqt-app-info) — About dialog support
+- [zoom-manager](https://github.com/juren53/zoom-manager) — UI zoom/font scaling
+- Optional: [Claude Code CLI](https://docs.anthropic.com/en/docs/claude-code) (`claude`) for the Get Help feature
 
 ## License
 
