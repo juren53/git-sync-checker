@@ -5,7 +5,7 @@ import json
 import datetime
 from PyQt6.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout,
                              QHBoxLayout, QPushButton, QLabel, QFrame, QMessageBox, QFileDialog,
-                             QDialog, QDialogButtonBox, QScrollArea)
+                             QDialog, QDialogButtonBox, QScrollArea, QTextEdit)
 from PyQt6.QtCore import QThread, pyqtSignal, Qt
 from typing import Any, Optional
 from PyQt6.QtGui import QFont, QIcon
@@ -134,6 +134,43 @@ class GitStashSyncThread(QThread):
             msg, ok = f"Pull failed AND stash pop failed.\n{err_p}\n{err_o}", False
 
         self.sync_done.emit(self.name, ok, msg)
+
+
+class ClaudeResponseThread(QThread):
+    response_ready = pyqtSignal(str, bool, str)  # name, success, response
+
+    def __init__(self, name, path, prompt):
+        super().__init__()
+        self.name = name
+        self.path = path
+        self.prompt = prompt
+
+    def run(self):
+        try:
+            kwargs = {}
+            if sys.platform.startswith("win"):
+                kwargs["creationflags"] = subprocess.CREATE_NO_WINDOW
+            result = subprocess.run(
+                ["claude", "--print", self.prompt],
+                cwd=self.path,
+                capture_output=True,
+                text=True,
+                timeout=60,
+                **kwargs
+            )
+            if result.returncode == 0:
+                self.response_ready.emit(self.name, True, result.stdout.strip())
+            else:
+                self.response_ready.emit(self.name, False,
+                    result.stderr.strip() or "Claude returned a non-zero exit code.")
+        except FileNotFoundError:
+            self.response_ready.emit(self.name, False,
+                "Claude Code CLI not found. Is `claude` installed and on your PATH?")
+        except subprocess.TimeoutExpired:
+            self.response_ready.emit(self.name, False,
+                "Request timed out after 60 seconds.")
+        except Exception as e:
+            self.response_ready.emit(self.name, False, str(e))
 
 
 def run_git_command(repo_path, *args):
@@ -309,6 +346,34 @@ class SyncHistoryDialog(QDialog):
             return f"Event: {event}", "#888888"
 
 
+class ClaudeResponseDialog(QDialog):
+    def __init__(self, project_name, response, parent=None):
+        super().__init__(parent)
+        self.setWindowTitle(f"Claude's Suggestion — {project_name}")
+        self.setMinimumWidth(540)
+        self.setMinimumHeight(400)
+        layout = QVBoxLayout(self)
+
+        title = QLabel(f"Claude's suggestion for <b>{project_name}</b>:")
+        title.setWordWrap(True)
+        layout.addWidget(title)
+
+        text_area = QTextEdit()
+        text_area.setReadOnly(True)
+        text_area.setPlainText(response)
+        text_area.setStyleSheet("font-family: monospace; font-size: 12px;")
+        layout.addWidget(text_area)
+
+        btn_layout = QHBoxLayout()
+        copy_btn = QPushButton("Copy")
+        copy_btn.clicked.connect(lambda: QApplication.clipboard().setText(response))
+        close_btn = QPushButton("Close")
+        close_btn.clicked.connect(self.accept)
+        btn_layout.addWidget(copy_btn)
+        btn_layout.addWidget(close_btn)
+        layout.addLayout(btn_layout)
+
+
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
@@ -352,6 +417,7 @@ class MainWindow(QMainWindow):
         self.git_thread: Optional[QThread] = None
         self._sync_threads: list[GitSyncThread] = []
         self._stash_threads: list[GitStashSyncThread] = []
+        self._claude_threads: list[ClaudeResponseThread] = []
         self._dirty_state: dict[str, bool] = {}
 
     def _clear_project_ui(self):
@@ -404,11 +470,15 @@ class MainWindow(QMainWindow):
         sync_btn.clicked.connect(lambda: self.sync_project(name))
         layout.addWidget(sync_btn)
 
+        claude_btn = QPushButton("Ask Claude")
+        claude_btn.clicked.connect(lambda: self.ask_claude(name))
+        layout.addWidget(claude_btn)
+
         delete_btn = QPushButton("Delete")
         delete_btn.clicked.connect(lambda: self.delete_project(name))
         layout.addWidget(delete_btn)
 
-        row = {"layout": layout, "name": name_label, "status": status_label, "count": count_label, "sync_btn": sync_btn}
+        row = {"layout": layout, "name": name_label, "status": status_label, "count": count_label, "sync_btn": sync_btn, "claude_btn": claude_btn}
         return row
 
     def start_check(self):
@@ -512,6 +582,52 @@ class MainWindow(QMainWindow):
             row["sync_btn"].setEnabled(True)
             QMessageBox.warning(self, "Sync Failed",
                                 f"{name}:\n{message}\n\nTip: ask Claude Code to help fix this.")
+
+    def ask_claude(self, name):
+        idx = PROJECT_NAMES.index(name)
+        path = PROJECT_PATHS[idx]
+        row = self.project_widgets[name]
+
+        status_text = row["status"].text()
+        error_msg   = row["status"].toolTip()
+        dirty       = self._dirty_state.get(name, False)
+
+        _, status_out, _ = run_git_command(path, "status")
+        _, log_out,    _ = run_git_command(path, "log", "--oneline", "-5")
+
+        dirty_section = ""
+        if dirty:
+            _, porcelain, _ = run_git_command(path, "status", "--porcelain")
+            dirty_section = f"\nUncommitted changes:\n{porcelain}"
+
+        error_section = f"\nLast error:\n{error_msg}" if error_msg else ""
+
+        prompt = (
+            f"I'm using git-sync-checker to monitor git repos.\n\n"
+            f"Project: {name}\nPath: {path}\nStatus: {status_text}"
+            f"{error_section}{dirty_section}\n\n"
+            f"Git status:\n{status_out}\n\n"
+            f"Recent commits:\n{log_out}\n\n"
+            f"Please diagnose this git issue and suggest clear, practical steps to fix it."
+        )
+
+        row["claude_btn"].setEnabled(False)
+        row["claude_btn"].setText("⏳ Asking...")
+
+        thread = ClaudeResponseThread(name, path, prompt)
+        thread.response_ready.connect(self.on_claude_response)
+        thread.start()
+        self._claude_threads.append(thread)
+
+    def on_claude_response(self, name, success, response):
+        row = self.project_widgets[name]
+        row["claude_btn"].setEnabled(True)
+        row["claude_btn"].setText("Ask Claude")
+        if success:
+            ClaudeResponseDialog(name, response, parent=self).exec()
+        else:
+            QMessageBox.warning(self, "Claude Error",
+                                f"Could not get a response:\n{response}")
 
     def add_project_dialog(self):
         # Use QFileDialog to get a directory
