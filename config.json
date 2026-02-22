@@ -8,5 +8,10 @@
         "~/Projects/csv-reader",
         "~/Projects/git-sync-checker",
         "~/Projects/Icon_Manager_Module"
-    ]
+    ],
+    "preferences": {
+        "auto_refresh_interval": 0,
+        "auto_check_on_launch": true,
+        "theme": "dark"
+    }
 }
