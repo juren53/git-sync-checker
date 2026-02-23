@@ -136,6 +136,10 @@ All settings are stored in `config.json` in the application directory:
 
 Zoom level is stored separately via Qt's `QSettings`.
 
+## Windows compatibility
+
+All git subprocess output is decoded as UTF-8 with `errors="replace"`, preventing `UnicodeDecodeError` crashes when commit messages, author names, or file content contain characters outside the Windows cp1252 codepage.
+
 ## Requirements
 
 - Python 3.8+
