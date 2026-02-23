@@ -12,7 +12,7 @@ A PyQt6 desktop application that monitors whether your local git repositories ar
 - **Color-coded status** — instantly see which repos are synced, ahead, behind, or diverged
 - **One-click sync** — pull behind repos with a single button press (`git pull --ff-only`)
 - **Dirty tree handling** — detects uncommitted changes and offers Stash → Pull → Restore workflow
-- **Git Info drill-down** — click any project name to open a dialog showing the current branch, tracking branch, HEAD SHA, remote URL, latest commit stat, full diff patch, unstaged changes, and a 20-entry log
+- **Git Info drill-down** — click any project name to open a dialog showing the current branch, tracking branch, HEAD SHA, remote URL, latest commit stat, full diff patch, unstaged changes, working-tree status, and a 20-entry log
 - **Get Help (Claude Code)** — ask Claude Code for diagnosis and fix suggestions on problematic repos
 - **Sync history log** — persistent event log (sync attempts, dirty detections, user actions) viewable via History dialog
 - **Zoom in/out** — scale the UI via View menu (`Ctrl++` / `Ctrl+-` / `Ctrl+0`) or `Ctrl+Mouse Wheel`; zoom level persists across sessions
@@ -100,6 +100,7 @@ Click the **project name** (underlined) in any row to open the Git Info dialog f
 - **Log (last 20) tab** — recent history in a columnar format: short hash, relative date, author, and subject
 - **Git Show tab** — full `git show HEAD` patch output with file headers, `@@` hunks, and added/removed lines
 - **Git Diff tab** — unstaged working-tree changes (`git diff`); shows `(no unstaged changes)` when the tree is clean
+- **Git Status tab** — full `git status` output: branch tracking info, staged changes, unstaged changes, and untracked files
 
 Use **Refresh** inside the dialog to re-query git without closing it.
 

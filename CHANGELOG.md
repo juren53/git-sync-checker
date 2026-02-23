@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.3.3] - 2026-02-23
+
+### Added
+- **Git Status tab** in Git Info dialog: full `git status` output showing branch tracking info, staged changes, unstaged changes, and untracked files.
+
 ## [0.3.2] - 2026-02-23
 
 ### Added
