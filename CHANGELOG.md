@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.4.1] - 2026-02-23
+
+### Added
+- **File browser for Git Blame tab**: a Browse… button opens a file dialog rooted at the repo directory; selecting a file converts the path to relative, populates the input, and immediately runs `git blame`.
+
 ## [0.4.0] - 2026-02-23
 
 ### Added

@@ -107,7 +107,7 @@ Click the **project name** (underlined) in any row to open the Git Info dialog f
 - **Git Tags tab** — all tags with their one-line annotation or commit message (`git tag -n`); shows `(no tags)` when none exist
 - **Git Config tab** — repo-level configuration settings from `.git/config` (`git config --local --list`)
 - **Git Log tab** — ASCII branch graph of the full repo history across all branches (`git log --oneline --graph --decorate --all`)
-- **Git Blame tab** — interactive: enter any file path (pre-filled with the first file from HEAD) and click Show to see the full `git blame` annotation — commit hash, author, date, and content per line
+- **Git Blame tab** — interactive: enter any file path (pre-filled with the first file from HEAD), or click **Browse…** to pick a file from the repo; click Show to see the full `git blame` annotation — commit hash, author, date, and content per line
 
 Use **Refresh** inside the dialog to re-query git without closing it.
 

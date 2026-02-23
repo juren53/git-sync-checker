@@ -18,7 +18,7 @@ from pyqt_app_info import AppIdentity, gather_info
 from pyqt_app_info.qt import AboutDialog
 from theme_manager import get_theme_registry, get_fusion_palette
 
-__version__ = "0.4.0"
+__version__ = "0.4.1"
 
 
 if getattr(sys, 'frozen', False):
@@ -485,9 +485,12 @@ class GitInfoDialog(QDialog):
         self._blame_input.setPlaceholderText("Relative file path…")
         self._blame_input.setStyleSheet("font-family: monospace;")
         self._blame_input.returnPressed.connect(self._run_blame)
+        browse_btn = QPushButton("Browse…")
+        browse_btn.clicked.connect(self._browse_blame_file)
         show_btn = QPushButton("Show")
         show_btn.clicked.connect(self._run_blame)
         input_row.addWidget(self._blame_input)
+        input_row.addWidget(browse_btn)
         input_row.addWidget(show_btn)
         self._blame_edit = QTextEdit()
         self._blame_edit.setReadOnly(True)
@@ -559,6 +562,13 @@ class GitInfoDialog(QDialog):
                 "-20",
             )
         )
+
+    def _browse_blame_file(self):
+        path, _ = QFileDialog.getOpenFileName(self, "Select File for Blame", self._path)
+        if path:
+            rel = os.path.relpath(path, self._path).replace("\\", "/")
+            self._blame_input.setText(rel)
+            self._run_blame()
 
     def _run_blame(self):
         filepath = self._blame_input.text().strip()
