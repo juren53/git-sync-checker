@@ -18,7 +18,7 @@ from pyqt_app_info import AppIdentity, gather_info
 from pyqt_app_info.qt import AboutDialog
 from theme_manager import get_theme_registry, get_fusion_palette
 
-__version__ = "0.4.1"
+__version__ = "0.4.2"
 
 
 if getattr(sys, 'frozen', False):
@@ -216,6 +216,8 @@ def run_git_command(repo_path, *args):
             cwd=repo_path,
             capture_output=True,
             text=True,
+            encoding="utf-8",
+            errors="replace",
             timeout=30,
             **kwargs
         )

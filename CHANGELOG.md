@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.4.2] - 2026-02-23
+
+### Fixed
+- **UnicodeDecodeError on Windows**: `run_git_command` now forces `encoding="utf-8"` with `errors="replace"` in all subprocess calls, preventing crashes when git output contains characters outside the Windows cp1252 codepage (e.g. in commit messages, author names, or file content).
+
 ## [0.4.1] - 2026-02-23
 
 ### Added
