@@ -17,7 +17,7 @@ from pyqt_app_info import AppIdentity, gather_info
 from pyqt_app_info.qt import AboutDialog
 from theme_manager import get_theme_registry, get_fusion_palette
 
-__version__ = "0.3.7"
+__version__ = "0.3.8"
 
 
 if getattr(sys, 'frozen', False):
@@ -465,6 +465,11 @@ class GitInfoDialog(QDialog):
         self._tags_edit.setStyleSheet("font-family: monospace; font-size: 12px;")
         self._tabs.addTab(self._tags_edit, "Git Tags")
 
+        self._config_edit = QTextEdit()
+        self._config_edit.setReadOnly(True)
+        self._config_edit.setStyleSheet("font-family: monospace; font-size: 12px;")
+        self._tabs.addTab(self._config_edit, "Git Config")
+
         layout.addWidget(self._tabs)
 
         # ── Buttons ───────────────────────────────────────────────
@@ -512,6 +517,7 @@ class GitInfoDialog(QDialog):
         self._branches_edit.setPlainText(self._git_text("branch", "-a", "-vv"))
         tags_out = self._git_text("tag", "-n")
         self._tags_edit.setPlainText(tags_out if tags_out.strip() else "(no tags)")
+        self._config_edit.setPlainText(self._git_text("config", "--local", "--list"))
         self._log_edit.setPlainText(
             self._git_text(
                 "log",

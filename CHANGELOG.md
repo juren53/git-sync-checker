@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.3.8] - 2026-02-23
+
+### Added
+- **Git Config tab** in Git Info dialog: shows all repo-level configuration settings from `.git/config` (`git config --local --list`).
+
 ## [0.3.7] - 2026-02-23
 
 ### Added
