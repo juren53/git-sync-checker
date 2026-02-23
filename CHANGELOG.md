@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.3.4] - 2026-02-23
+
+### Added
+- **Git Stash tab** in Git Info dialog: lists all stash entries (`git stash list`); displays `(no stashes)` when the stash is empty.
+
 ## [0.3.3] - 2026-02-23
 
 ### Added

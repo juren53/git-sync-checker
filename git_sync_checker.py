@@ -17,7 +17,7 @@ from pyqt_app_info import AppIdentity, gather_info
 from pyqt_app_info.qt import AboutDialog
 from theme_manager import get_theme_registry, get_fusion_palette
 
-__version__ = "0.3.3"
+__version__ = "0.3.4"
 
 
 if getattr(sys, 'frozen', False):
@@ -445,6 +445,11 @@ class GitInfoDialog(QDialog):
         self._status_edit.setStyleSheet("font-family: monospace; font-size: 12px;")
         self._tabs.addTab(self._status_edit, "Git Status")
 
+        self._stash_edit = QTextEdit()
+        self._stash_edit.setReadOnly(True)
+        self._stash_edit.setStyleSheet("font-family: monospace; font-size: 12px;")
+        self._tabs.addTab(self._stash_edit, "Git Stash")
+
         layout.addWidget(self._tabs)
 
         # ── Buttons ───────────────────────────────────────────────
@@ -486,6 +491,8 @@ class GitInfoDialog(QDialog):
         diff_out = self._git_text("diff")
         self._diff_edit.setPlainText(diff_out if diff_out.strip() else "(no unstaged changes)")
         self._status_edit.setPlainText(self._git_text("status"))
+        stash_out = self._git_text("stash", "list")
+        self._stash_edit.setPlainText(stash_out if stash_out.strip() else "(no stashes)")
         self._log_edit.setPlainText(
             self._git_text(
                 "log",
