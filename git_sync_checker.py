@@ -18,7 +18,7 @@ from pyqt_app_info import AppIdentity, gather_info
 from pyqt_app_info.qt import AboutDialog
 from theme_manager import get_theme_registry, get_fusion_palette
 
-__version__ = "0.4.2"
+__version__ = "0.4.3"
 
 
 if getattr(sys, 'frozen', False):
@@ -501,6 +501,29 @@ class GitInfoDialog(QDialog):
         blame_layout.addWidget(self._blame_edit)
         self._tabs.addTab(blame_widget, "Git Blame")
 
+        grep_widget = QWidget()
+        grep_layout = QVBoxLayout(grep_widget)
+        grep_layout.setContentsMargins(4, 4, 4, 4)
+        grep_layout.setSpacing(4)
+        grep_row = QHBoxLayout()
+        self._grep_pattern = QLineEdit()
+        self._grep_pattern.setPlaceholderText("Search pattern…")
+        self._grep_pattern.returnPressed.connect(self._run_grep)
+        self._grep_glob = QLineEdit()
+        self._grep_glob.setPlaceholderText("File glob (e.g. *.py) — optional")
+        self._grep_glob.setFixedWidth(200)
+        grep_btn = QPushButton("Search")
+        grep_btn.clicked.connect(self._run_grep)
+        grep_row.addWidget(self._grep_pattern)
+        grep_row.addWidget(self._grep_glob)
+        grep_row.addWidget(grep_btn)
+        self._grep_edit = QTextEdit()
+        self._grep_edit.setReadOnly(True)
+        self._grep_edit.setStyleSheet("font-family: monospace; font-size: 12px;")
+        grep_layout.addLayout(grep_row)
+        grep_layout.addWidget(self._grep_edit)
+        self._tabs.addTab(grep_widget, "Git Grep")
+
         layout.addWidget(self._tabs)
 
         # ── Buttons ───────────────────────────────────────────────
@@ -579,6 +602,18 @@ class GitInfoDialog(QDialog):
             return
         out = self._git_text("blame", filepath)
         self._blame_edit.setPlainText(out if out.strip() else f"(no blame output for '{filepath}')")
+
+    def _run_grep(self):
+        pattern = self._grep_pattern.text().strip()
+        if not pattern:
+            self._grep_edit.setPlainText("Enter a search pattern above and click Search.")
+            return
+        args = ["grep", "-n", "--heading", pattern]
+        glob = self._grep_glob.text().strip()
+        if glob:
+            args += ["--", glob]
+        out = self._git_text(*args)
+        self._grep_edit.setPlainText(out if out.strip() else f"(no matches for '{pattern}')")
 
 
 class ClaudeResponseDialog(QDialog):

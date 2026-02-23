@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.4.3] - 2026-02-23
+
+### Added
+- **Git Grep tab** in Git Info dialog: interactive search across the repo with a pattern input, an optional file glob to narrow results (e.g. `*.py`), and a Search button; runs `git grep -n --heading` and displays filename headers with matching line numbers and content. Enter key also triggers the search.
+
 ## [0.4.2] - 2026-02-23
 
 ### Fixed
