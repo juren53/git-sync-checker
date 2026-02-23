@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.3.5] - 2026-02-23
+
+### Added
+- **Git Remote tab** in Git Info dialog: lists all configured remotes with their fetch and push URLs (`git remote -v`).
+
 ## [0.3.4] - 2026-02-23
 
 ### Added
