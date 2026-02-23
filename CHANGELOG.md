@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.3.6] - 2026-02-23
+
+### Added
+- **Git Branches tab** in Git Info dialog: lists all local and remote-tracking branches with short SHA, tracking relationship, and latest commit subject (`git branch -a -vv`).
+
 ## [0.3.5] - 2026-02-23
 
 ### Added

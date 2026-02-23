@@ -17,7 +17,7 @@ from pyqt_app_info import AppIdentity, gather_info
 from pyqt_app_info.qt import AboutDialog
 from theme_manager import get_theme_registry, get_fusion_palette
 
-__version__ = "0.3.5"
+__version__ = "0.3.6"
 
 
 if getattr(sys, 'frozen', False):
@@ -455,6 +455,11 @@ class GitInfoDialog(QDialog):
         self._remote_edit.setStyleSheet("font-family: monospace; font-size: 12px;")
         self._tabs.addTab(self._remote_edit, "Git Remote")
 
+        self._branches_edit = QTextEdit()
+        self._branches_edit.setReadOnly(True)
+        self._branches_edit.setStyleSheet("font-family: monospace; font-size: 12px;")
+        self._tabs.addTab(self._branches_edit, "Git Branches")
+
         layout.addWidget(self._tabs)
 
         # ── Buttons ───────────────────────────────────────────────
@@ -499,6 +504,7 @@ class GitInfoDialog(QDialog):
         stash_out = self._git_text("stash", "list")
         self._stash_edit.setPlainText(stash_out if stash_out.strip() else "(no stashes)")
         self._remote_edit.setPlainText(self._git_text("remote", "-v"))
+        self._branches_edit.setPlainText(self._git_text("branch", "-a", "-vv"))
         self._log_edit.setPlainText(
             self._git_text(
                 "log",
