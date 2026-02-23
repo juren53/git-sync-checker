@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.3.9] - 2026-02-23
+
+### Added
+- **Git Log tab** in Git Info dialog: ASCII branch graph showing all branches and their relationships, decorated with ref names (`git log --oneline --graph --decorate --all`).
+
 ## [0.3.8] - 2026-02-23
 
 ### Added
