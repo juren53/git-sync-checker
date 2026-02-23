@@ -17,7 +17,7 @@ from pyqt_app_info import AppIdentity, gather_info
 from pyqt_app_info.qt import AboutDialog
 from theme_manager import get_theme_registry, get_fusion_palette
 
-__version__ = "0.3.1"
+__version__ = "0.3.2"
 
 
 if getattr(sys, 'frozen', False):
@@ -435,6 +435,11 @@ class GitInfoDialog(QDialog):
         self._gitshow_edit.setStyleSheet("font-family: monospace; font-size: 12px;")
         self._tabs.addTab(self._gitshow_edit, "Git Show")
 
+        self._diff_edit = QTextEdit()
+        self._diff_edit.setReadOnly(True)
+        self._diff_edit.setStyleSheet("font-family: monospace; font-size: 12px;")
+        self._tabs.addTab(self._diff_edit, "Git Diff")
+
         layout.addWidget(self._tabs)
 
         # ── Buttons ───────────────────────────────────────────────
@@ -473,6 +478,8 @@ class GitInfoDialog(QDialog):
 
         self._show_edit.setPlainText(self._git_text("show", "--stat", "HEAD"))
         self._gitshow_edit.setPlainText(self._git_text("show", "HEAD"))
+        diff_out = self._git_text("diff")
+        self._diff_edit.setPlainText(diff_out if diff_out.strip() else "(no unstaged changes)")
         self._log_edit.setPlainText(
             self._git_text(
                 "log",

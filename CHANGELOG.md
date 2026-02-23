@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.3.2] - 2026-02-23
+
+### Added
+- **Git Diff tab** in Git Info dialog: shows unstaged working-tree changes (`git diff`); displays `(no unstaged changes)` when the tree is clean.
+
 ## [0.3.1] - 2026-02-23
 
 ### Added
