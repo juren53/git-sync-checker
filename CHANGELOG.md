@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.3.7] - 2026-02-23
+
+### Added
+- **Git Tags tab** in Git Info dialog: lists all tags with their one-line annotation or commit message (`git tag -n`); displays `(no tags)` when none exist.
+
 ## [0.3.6] - 2026-02-23
 
 ### Added
