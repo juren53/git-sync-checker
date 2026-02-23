@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.3.0] - 2026-02-23
+
+### Added
+- **Git Info dialog**: click any project name in the main window to open a drill-down dialog showing:
+  - **Overview strip**: current branch, tracking branch (upstream ref), HEAD short SHA, and remote origin URL.
+  - **"Latest Commit" tab**: full `git show --stat HEAD` output — commit hash, author, date, message, and per-file change stat.
+  - **"Log (last 20)" tab**: `git log` in a clean columnar format — short hash, relative date, author, and subject.
+  - **Refresh** button to re-run all git queries in place without reopening the dialog.
+- Project name in each row is now a clickable underlined button with a pointer cursor and tooltip.
+- Added `QTabWidget` to PyQt6 imports.
+
 ## [0.2.7] - 2026-02-22
 
 ### Changed

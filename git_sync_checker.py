@@ -6,7 +6,7 @@ import datetime
 from PyQt6.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout,
                              QHBoxLayout, QPushButton, QLabel, QFrame, QMessageBox, QFileDialog,
                              QDialog, QDialogButtonBox, QScrollArea, QTextEdit,
-                             QSpinBox, QCheckBox, QFormLayout, QComboBox, QGridLayout)
+                             QSpinBox, QCheckBox, QFormLayout, QComboBox, QGridLayout, QTabWidget)
 from PyQt6.QtCore import QThread, pyqtSignal, Qt, QTimer, QUrl
 from PyQt6.QtGui import QDesktopServices
 from typing import Any, Optional
@@ -17,7 +17,7 @@ from pyqt_app_info import AppIdentity, gather_info
 from pyqt_app_info.qt import AboutDialog
 from theme_manager import get_theme_registry, get_fusion_palette
 
-__version__ = "0.2.7"
+__version__ = "0.3.0"
 
 
 if getattr(sys, 'frozen', False):
@@ -378,6 +378,104 @@ class SyncHistoryDialog(QDialog):
             return f"Event: {event}", "#888888"
 
 
+class GitInfoDialog(QDialog):
+    """Drill-down dialog showing git show / git log for a project."""
+
+    def __init__(self, project_name, project_path, parent=None):
+        super().__init__(parent)
+        self.setWindowTitle(f"Git Info — {project_name}")
+        self.setMinimumSize(620, 520)
+        self._name = project_name
+        self._path = project_path
+
+        layout = QVBoxLayout(self)
+        layout.setSpacing(6)
+
+        # ── Overview strip ────────────────────────────────────────
+        ov_frame = QFrame()
+        ov_frame.setFrameShape(QFrame.Shape.StyledPanel)
+        ov_grid = QGridLayout(ov_frame)
+        ov_grid.setContentsMargins(8, 6, 8, 6)
+        ov_grid.setHorizontalSpacing(12)
+
+        self._lbl_branch   = QLabel()
+        self._lbl_tracking = QLabel()
+        self._lbl_head     = QLabel()
+        self._lbl_head.setStyleSheet("font-family: monospace;")
+        self._lbl_url      = QLabel()
+        self._lbl_url.setStyleSheet("font-family: monospace; font-size: 11px;")
+        self._lbl_url.setWordWrap(True)
+
+        ov_grid.addWidget(QLabel("<b>Branch:</b>"),   0, 0)
+        ov_grid.addWidget(self._lbl_branch,           0, 1)
+        ov_grid.addWidget(QLabel("<b>Tracking:</b>"), 0, 2)
+        ov_grid.addWidget(self._lbl_tracking,         0, 3)
+        ov_grid.addWidget(QLabel("<b>HEAD:</b>"),     1, 0)
+        ov_grid.addWidget(self._lbl_head,             1, 1)
+        ov_grid.addWidget(QLabel("<b>URL:</b>"),      1, 2)
+        ov_grid.addWidget(self._lbl_url,              1, 3)
+        ov_grid.setColumnStretch(3, 1)
+        layout.addWidget(ov_frame)
+
+        # ── Tabs ──────────────────────────────────────────────────
+        self._tabs = QTabWidget()
+
+        self._show_edit = QTextEdit()
+        self._show_edit.setReadOnly(True)
+        self._show_edit.setStyleSheet("font-family: monospace; font-size: 12px;")
+        self._tabs.addTab(self._show_edit, "Latest Commit")
+
+        self._log_edit = QTextEdit()
+        self._log_edit.setReadOnly(True)
+        self._log_edit.setStyleSheet("font-family: monospace; font-size: 12px;")
+        self._tabs.addTab(self._log_edit, "Log (last 20)")
+
+        layout.addWidget(self._tabs)
+
+        # ── Buttons ───────────────────────────────────────────────
+        btn_row = QHBoxLayout()
+        btn_row.addStretch()
+        refresh_btn = QPushButton("Refresh")
+        refresh_btn.clicked.connect(self._populate)
+        close_btn = QPushButton("Close")
+        close_btn.clicked.connect(self.accept)
+        btn_row.addWidget(refresh_btn)
+        btn_row.addWidget(close_btn)
+        layout.addLayout(btn_row)
+
+        self._populate()
+
+    # ── helpers ──────────────────────────────────────────────────
+
+    def _git(self, *args):
+        rc, out, _ = run_git_command(self._path, *args)
+        return out.strip() if rc == 0 else ""
+
+    def _git_text(self, *args):
+        rc, out, err = run_git_command(self._path, *args)
+        return out if rc == 0 else f"(error: {err})"
+
+    def _populate(self):
+        branch   = self._git("branch", "--show-current") or "(detached HEAD)"
+        tracking = self._git("rev-parse", "--abbrev-ref", "--symbolic-full-name", "@{u}") or "(none)"
+        head_sha = self._git("rev-parse", "--short", "HEAD") or "?"
+        url      = self._git("remote", "get-url", "origin") or "(no remote)"
+
+        self._lbl_branch.setText(branch)
+        self._lbl_tracking.setText(tracking)
+        self._lbl_head.setText(head_sha)
+        self._lbl_url.setText(url)
+
+        self._show_edit.setPlainText(self._git_text("show", "--stat", "HEAD"))
+        self._log_edit.setPlainText(
+            self._git_text(
+                "log",
+                "--pretty=format:%h  %<(14,trunc)%ar  %<(20,trunc)%an  %s",
+                "-20",
+            )
+        )
+
+
 class ClaudeResponseDialog(QDialog):
     def __init__(self, project_name, response, parent=None):
         super().__init__(parent)
@@ -553,8 +651,13 @@ class MainWindow(QMainWindow):
 
 
     def create_project_row(self, name, name_width):
-        name_label = QLabel(name)
+        name_label = QPushButton(name)
+        name_label.setFlat(True)
+        name_label.setCursor(Qt.CursorShape.PointingHandCursor)
+        name_label.setToolTip(f"Click to view git details for {name}")
+        name_label.setStyleSheet("text-align: left; padding: 2px 0px; text-decoration: underline;")
         name_label.setFixedWidth(name_width)
+        name_label.clicked.connect(lambda: self.show_git_info(name))
 
         status_label = QLabel("⏳ Checking...")
 
@@ -779,6 +882,10 @@ class MainWindow(QMainWindow):
 
     def show_history_dialog(self):
         SyncHistoryDialog(parent=self).exec()
+
+    def show_git_info(self, name):
+        idx = PROJECT_NAMES.index(name)
+        GitInfoDialog(name, PROJECT_PATHS[idx], parent=self).exec()
 
     # ------------------------------------------------------------------ menu
 
