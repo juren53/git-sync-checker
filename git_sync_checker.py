@@ -6,7 +6,8 @@ import datetime
 from PyQt6.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout,
                              QHBoxLayout, QPushButton, QLabel, QFrame, QMessageBox, QFileDialog,
                              QDialog, QDialogButtonBox, QScrollArea, QTextEdit,
-                             QSpinBox, QCheckBox, QFormLayout, QComboBox, QGridLayout, QTabWidget)
+                             QSpinBox, QCheckBox, QFormLayout, QComboBox, QGridLayout, QTabWidget,
+                             QLineEdit)
 from PyQt6.QtCore import QThread, pyqtSignal, Qt, QTimer, QUrl
 from PyQt6.QtGui import QDesktopServices
 from typing import Any, Optional
@@ -17,7 +18,7 @@ from pyqt_app_info import AppIdentity, gather_info
 from pyqt_app_info.qt import AboutDialog
 from theme_manager import get_theme_registry, get_fusion_palette
 
-__version__ = "0.3.9"
+__version__ = "0.4.0"
 
 
 if getattr(sys, 'frozen', False):
@@ -475,6 +476,26 @@ class GitInfoDialog(QDialog):
         self._gitlog_edit.setStyleSheet("font-family: monospace; font-size: 12px;")
         self._tabs.addTab(self._gitlog_edit, "Git Log")
 
+        blame_widget = QWidget()
+        blame_layout = QVBoxLayout(blame_widget)
+        blame_layout.setContentsMargins(4, 4, 4, 4)
+        blame_layout.setSpacing(4)
+        input_row = QHBoxLayout()
+        self._blame_input = QLineEdit()
+        self._blame_input.setPlaceholderText("Relative file path…")
+        self._blame_input.setStyleSheet("font-family: monospace;")
+        self._blame_input.returnPressed.connect(self._run_blame)
+        show_btn = QPushButton("Show")
+        show_btn.clicked.connect(self._run_blame)
+        input_row.addWidget(self._blame_input)
+        input_row.addWidget(show_btn)
+        self._blame_edit = QTextEdit()
+        self._blame_edit.setReadOnly(True)
+        self._blame_edit.setStyleSheet("font-family: monospace; font-size: 12px;")
+        blame_layout.addLayout(input_row)
+        blame_layout.addWidget(self._blame_edit)
+        self._tabs.addTab(blame_widget, "Git Blame")
+
         layout.addWidget(self._tabs)
 
         # ── Buttons ───────────────────────────────────────────────
@@ -526,6 +547,11 @@ class GitInfoDialog(QDialog):
         self._gitlog_edit.setPlainText(
             self._git_text("log", "--oneline", "--graph", "--decorate", "--all")
         )
+        first_file = self._git(
+            "diff-tree", "--no-commit-id", "-r", "--name-only", "HEAD"
+        ).splitlines()
+        if first_file and not self._blame_input.text():
+            self._blame_input.setText(first_file[0])
         self._log_edit.setPlainText(
             self._git_text(
                 "log",
@@ -533,6 +559,14 @@ class GitInfoDialog(QDialog):
                 "-20",
             )
         )
+
+    def _run_blame(self):
+        filepath = self._blame_input.text().strip()
+        if not filepath:
+            self._blame_edit.setPlainText("Enter a file path above and click Show.")
+            return
+        out = self._git_text("blame", filepath)
+        self._blame_edit.setPlainText(out if out.strip() else f"(no blame output for '{filepath}')")
 
 
 class ClaudeResponseDialog(QDialog):

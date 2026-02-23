@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.4.0] - 2026-02-23
+
+### Added
+- **Git Blame tab** in Git Info dialog: interactive tab with a file path input (pre-filled with the first file from the latest commit) and a Show button; runs `git blame <file>` and displays the full annotated output — commit hash, author, date, and content for every line. Enter key also triggers the lookup.
+
 ## [0.3.9] - 2026-02-23
 
 ### Added

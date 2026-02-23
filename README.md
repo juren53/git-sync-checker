@@ -12,7 +12,7 @@ A PyQt6 desktop application that monitors whether your local git repositories ar
 - **Color-coded status** — instantly see which repos are synced, ahead, behind, or diverged
 - **One-click sync** — pull behind repos with a single button press (`git pull --ff-only`)
 - **Dirty tree handling** — detects uncommitted changes and offers Stash → Pull → Restore workflow
-- **Git Info drill-down** — click any project name to open a dialog with 10 tabs covering every angle of a repo: overview strip, latest commit stat, full diff patch, unstaged changes, working-tree status, stash list, remotes, branches, tags, repo config, and an ASCII branch graph
+- **Git Info drill-down** — click any project name to open a dialog with 11 tabs covering every angle of a repo: overview strip, latest commit stat, full diff patch, unstaged changes, working-tree status, stash list, remotes, branches, tags, repo config, ASCII branch graph, and interactive blame viewer
 - **Get Help (Claude Code)** — ask Claude Code for diagnosis and fix suggestions on problematic repos
 - **Sync history log** — persistent event log (sync attempts, dirty detections, user actions) viewable via History dialog
 - **Zoom in/out** — scale the UI via View menu (`Ctrl++` / `Ctrl+-` / `Ctrl+0`) or `Ctrl+Mouse Wheel`; zoom level persists across sessions
@@ -107,6 +107,7 @@ Click the **project name** (underlined) in any row to open the Git Info dialog f
 - **Git Tags tab** — all tags with their one-line annotation or commit message (`git tag -n`); shows `(no tags)` when none exist
 - **Git Config tab** — repo-level configuration settings from `.git/config` (`git config --local --list`)
 - **Git Log tab** — ASCII branch graph of the full repo history across all branches (`git log --oneline --graph --decorate --all`)
+- **Git Blame tab** — interactive: enter any file path (pre-filled with the first file from HEAD) and click Show to see the full `git blame` annotation — commit hash, author, date, and content per line
 
 Use **Refresh** inside the dialog to re-query git without closing it.
 
