@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.3.1] - 2026-02-23
+
+### Added
+- **Git Show tab** in Git Info dialog: full `git show HEAD` output including the complete diff patch (file headers, hunks, added/removed lines) for the latest commit.
+
 ## [0.3.0] - 2026-02-23
 
 ### Added

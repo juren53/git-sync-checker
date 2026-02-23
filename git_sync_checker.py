@@ -17,7 +17,7 @@ from pyqt_app_info import AppIdentity, gather_info
 from pyqt_app_info.qt import AboutDialog
 from theme_manager import get_theme_registry, get_fusion_palette
 
-__version__ = "0.3.0"
+__version__ = "0.3.1"
 
 
 if getattr(sys, 'frozen', False):
@@ -430,6 +430,11 @@ class GitInfoDialog(QDialog):
         self._log_edit.setStyleSheet("font-family: monospace; font-size: 12px;")
         self._tabs.addTab(self._log_edit, "Log (last 20)")
 
+        self._gitshow_edit = QTextEdit()
+        self._gitshow_edit.setReadOnly(True)
+        self._gitshow_edit.setStyleSheet("font-family: monospace; font-size: 12px;")
+        self._tabs.addTab(self._gitshow_edit, "Git Show")
+
         layout.addWidget(self._tabs)
 
         # ── Buttons ───────────────────────────────────────────────
@@ -467,6 +472,7 @@ class GitInfoDialog(QDialog):
         self._lbl_url.setText(url)
 
         self._show_edit.setPlainText(self._git_text("show", "--stat", "HEAD"))
+        self._gitshow_edit.setPlainText(self._git_text("show", "HEAD"))
         self._log_edit.setPlainText(
             self._git_text(
                 "log",
