@@ -12,6 +12,7 @@ A PyQt6 desktop application that monitors whether your local git repositories ar
 - **Color-coded status** — instantly see which repos are synced, ahead, behind, or diverged
 - **One-click sync** — pull behind repos with a single button press (`git pull --ff-only`)
 - **Dirty tree handling** — detects uncommitted changes and offers Stash → Pull → Restore workflow
+- **Git Info drill-down** — click any project name to open a dialog showing the current branch, tracking branch, HEAD SHA, remote URL, latest commit details (`git show --stat`), and a 20-entry log (`git log`)
 - **Get Help (Claude Code)** — ask Claude Code for diagnosis and fix suggestions on problematic repos
 - **Sync history log** — persistent event log (sync attempts, dirty detections, user actions) viewable via History dialog
 - **Zoom in/out** — scale the UI via View menu (`Ctrl++` / `Ctrl+-` / `Ctrl+0`) or `Ctrl+Mouse Wheel`; zoom level persists across sessions
@@ -89,6 +90,16 @@ When a repo is behind its remote, the **Sync** button activates. Clicking it run
 If the repo has uncommitted changes (⚠), a dialog offers:
 - **Stash → Pull → Restore** — stashes changes, pulls, then pops the stash
 - **Cancel** — abort the sync
+
+### Viewing git details for a project
+
+Click the **project name** (underlined) in any row to open the Git Info dialog for that repo. It shows:
+
+- **Overview** — current branch, upstream tracking branch, HEAD short SHA, and remote origin URL
+- **Latest Commit tab** — full `git show --stat HEAD`: commit hash, author, date, message, and per-file change summary
+- **Log (last 20) tab** — recent history in a columnar format: short hash, relative date, author, and subject
+
+Use **Refresh** inside the dialog to re-query git without closing it.
 
 ### Keyboard shortcuts
 
