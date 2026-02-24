@@ -12,6 +12,7 @@ A PyQt6 desktop application that monitors whether your local git repositories ar
 - **Color-coded status** — instantly see which repos are synced, ahead, behind, or diverged
 - **One-click sync** — pull behind repos with a single button press (`git pull --ff-only`)
 - **Dirty tree handling** — detects uncommitted changes and offers Stash → Pull → Restore workflow
+- **Orphaned stash warning** — after each status check, repos with leftover stashes show a 📦 indicator with a tooltip directing you to the Git Info > Stash tab to review them
 - **Git Info drill-down** — click any project name to open a dialog with 12 tabs covering every angle of a repo: overview strip, latest commit stat, full diff patch, unstaged changes, working-tree status, stash list, remotes, branches, tags, repo config, ASCII branch graph, interactive blame viewer, and repo-wide grep search
 - **Get Help (Claude Code)** — ask Claude Code for diagnosis and fix suggestions on problematic repos
 - **Sync history log** — persistent event log (sync attempts, dirty detections, user actions) viewable via History dialog
@@ -29,6 +30,7 @@ A PyQt6 desktop application that monitors whether your local git repositories ar
 | ↓ Behind | Remote has new commits (Sync enabled) | Orange |
 | ⇅ Diverged | Both sides have different commits | Red |
 | ⚠ | Uncommitted local changes detected | Yellow |
+| 📦 | Leftover stash(es) detected — may be from a failed sync | Tooltip |
 | ❌ Error | Could not check repo (missing, no remote, etc.) | Grey |
 
 ## Installation
