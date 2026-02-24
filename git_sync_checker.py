@@ -115,12 +115,14 @@ class SyncLogger:
 
 
 class GitCheckThread(QThread):
-    result_ready = pyqtSignal(str, str, int, int, bool)  # name, status, ahead, behind, dirty
+    result_ready = pyqtSignal(str, str, int, int, bool, int)  # name, status, ahead, behind, dirty, stash_count
 
     def run(self):
         for path, name in zip(PROJECT_PATHS, PROJECT_NAMES):
             status, ahead, behind, dirty = check_git_sync(path)
-            self.result_ready.emit(name, status, ahead, behind, dirty)
+            rc_st, stash_out, _ = run_git_command(path, "stash", "list")
+            stash_count = len([l for l in stash_out.splitlines() if l.strip()]) if rc_st == 0 else 0
+            self.result_ready.emit(name, status, ahead, behind, dirty, stash_count)
 
 
 class GitSyncThread(QThread):
@@ -830,7 +832,7 @@ class MainWindow(QMainWindow):
         self.git_thread.finished.connect(self.on_finished)
         self.git_thread.start()
 
-    def on_result_ready(self, name, status, ahead, behind, dirty):
+    def on_result_ready(self, name, status, ahead, behind, dirty, stash_count):
         row = self.project_widgets[name]
         self._dirty_state[name] = dirty
 
@@ -862,6 +864,12 @@ class MainWindow(QMainWindow):
 
         if dirty:
             SyncLogger.log({"event": "dirty_detected", "project": name})
+
+        if stash_count > 0:
+            row["status"].setText(row["status"].text() + " 📦")
+            stash_tip = f"{stash_count} stash(es) found — may be a leftover from a failed sync.\nOpen Git Info > Stash tab to review."
+            existing_tip = row["status"].toolTip()
+            row["status"].setToolTip((existing_tip + "\n" + stash_tip).strip() if existing_tip else stash_tip)
 
         row["sync_btn"].setEnabled(status == "behind")
 
