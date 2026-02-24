@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.4.5] - 2026-02-23
+
+### Added
+- **Git Shortlog tab** in Git Info dialog: commit counts per author across all branches, sorted descending with email addresses (`git shortlog -sne --all`).
+
 ## [0.4.4] - 2026-02-23
 
 ### Added

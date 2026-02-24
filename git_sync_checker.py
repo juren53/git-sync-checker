@@ -18,7 +18,7 @@ from pyqt_app_info import AppIdentity, gather_info
 from pyqt_app_info.qt import AboutDialog
 from theme_manager import get_theme_registry, get_fusion_palette
 
-__version__ = "0.4.4"
+__version__ = "0.4.5"
 
 
 if getattr(sys, 'frozen', False):
@@ -526,6 +526,11 @@ class GitInfoDialog(QDialog):
         grep_layout.addWidget(self._grep_edit)
         self._tabs.addTab(grep_widget, "Git Grep")
 
+        self._shortlog_edit = QTextEdit()
+        self._shortlog_edit.setReadOnly(True)
+        self._shortlog_edit.setStyleSheet("font-family: monospace; font-size: 12px;")
+        self._tabs.addTab(self._shortlog_edit, "Git Shortlog")
+
         layout.addWidget(self._tabs)
 
         # ── Buttons ───────────────────────────────────────────────
@@ -577,6 +582,7 @@ class GitInfoDialog(QDialog):
         self._gitlog_edit.setPlainText(
             self._git_text("log", "--oneline", "--graph", "--decorate", "--all")
         )
+        self._shortlog_edit.setPlainText(self._git_text("shortlog", "-sne", "--all"))
         first_file = self._git(
             "diff-tree", "--no-commit-id", "-r", "--name-only", "HEAD"
         ).splitlines()
