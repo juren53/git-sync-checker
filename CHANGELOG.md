@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.4.4] - 2026-02-23
+
+### Added
+- **Orphaned stash warning**: after each status check, repos with leftover stashes (e.g. from a failed stash-sync) show a 📦 indicator appended to the status label, with a tooltip explaining how many stashes were found and directing the user to the Git Info > Stash tab to review them.
+
 ## [0.4.3] - 2026-02-23
 
 ### Added
