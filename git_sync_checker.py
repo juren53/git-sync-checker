@@ -19,7 +19,7 @@ from pyqt_app_info import AppIdentity, gather_info
 from pyqt_app_info.qt import AboutDialog
 from theme_manager import get_theme_registry, get_fusion_palette
 
-__version__ = "0.5.0"
+__version__ = "0.5.1"
 
 
 if getattr(sys, 'frozen', False):
@@ -116,14 +116,16 @@ class SyncLogger:
 
 
 class GitCheckThread(QThread):
-    result_ready = pyqtSignal(str, str, int, int, bool, int)  # name, status, ahead, behind, dirty, stash_count
+    result_ready = pyqtSignal(str, str, int, int, bool, int, str)  # name, status, ahead, behind, dirty, stash_count, version
 
     def run(self):
         for path, name in zip(PROJECT_PATHS, PROJECT_NAMES):
             status, ahead, behind, dirty = check_git_sync(path)
             rc_st, stash_out, _ = run_git_command(path, "stash", "list")
             stash_count = len([l for l in stash_out.splitlines() if l.strip()]) if rc_st == 0 else 0
-            self.result_ready.emit(name, status, ahead, behind, dirty, stash_count)
+            rc_v, tag_out, _ = run_git_command(path, "describe", "--tags", "--abbrev=0")
+            version = tag_out.strip() if rc_v == 0 and tag_out.strip() else "—"
+            self.result_ready.emit(name, status, ahead, behind, dirty, stash_count, version)
 
 
 class GitSyncThread(QThread):
@@ -907,6 +909,11 @@ class MainWindow(QMainWindow):
         name_label.setFixedWidth(name_width)
         name_label.clicked.connect(lambda: self.show_git_info(name))
 
+        version_label = QLabel("—")
+        version_label.setFixedWidth(62)
+        version_label.setStyleSheet("color: #888888; font-size: 11px;")
+        version_label.setToolTip("Latest git tag")
+
         status_label = QLabel("⏳ Checking...")
 
         count_label = QLabel("")
@@ -922,8 +929,8 @@ class MainWindow(QMainWindow):
         delete_btn = QPushButton("Remove")
         delete_btn.clicked.connect(lambda: self.delete_project(name))
 
-        widgets = [name_label, status_label, count_label, sync_btn, claude_btn, delete_btn]
-        row = {"widgets": widgets, "name": name_label, "status": status_label, "count": count_label, "sync_btn": sync_btn, "claude_btn": claude_btn}
+        widgets = [name_label, version_label, status_label, count_label, sync_btn, claude_btn, delete_btn]
+        row = {"widgets": widgets, "name": name_label, "version": version_label, "status": status_label, "count": count_label, "sync_btn": sync_btn, "claude_btn": claude_btn}
         return row
 
     def start_check(self):
@@ -938,9 +945,10 @@ class MainWindow(QMainWindow):
         self.git_thread.finished.connect(self.on_finished)
         self.git_thread.start()
 
-    def on_result_ready(self, name, status, ahead, behind, dirty, stash_count):
+    def on_result_ready(self, name, status, ahead, behind, dirty, stash_count, version):
         row = self.project_widgets[name]
         self._dirty_state[name] = dirty
+        row["version"].setText(version)
 
         row["status"].setToolTip("")
 

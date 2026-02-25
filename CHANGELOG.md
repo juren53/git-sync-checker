@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.5.1] - 2026-02-24
+
+### Added
+- **Latest version column in main UI**: each project row now shows its latest git tag (e.g. `v1.2.3`) in a muted label between the project name and sync status. Fetched in the background check thread alongside existing status; projects with no tags show `—`.
+
 ## [0.5.0] - 2026-02-24
 
 ### Added
