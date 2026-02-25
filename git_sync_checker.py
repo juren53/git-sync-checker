@@ -8,7 +8,8 @@ from PyQt6.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout,
                              QDialog, QDialogButtonBox, QScrollArea, QTextEdit,
                              QSpinBox, QCheckBox, QFormLayout, QComboBox, QGridLayout, QTabWidget,
                              QLineEdit)
-from PyQt6.QtCore import QThread, pyqtSignal, Qt, QTimer, QUrl
+from PyQt6.QtCore import QThread, pyqtSignal, Qt, QTimer, QUrl, QEvent
+from PyQt6.QtNetwork import QLocalServer, QLocalSocket
 from PyQt6.QtGui import QDesktopServices
 from typing import Any, Optional
 from PyQt6.QtGui import QFont, QFontMetrics, QIcon, QAction
@@ -18,7 +19,7 @@ from pyqt_app_info import AppIdentity, gather_info
 from pyqt_app_info.qt import AboutDialog
 from theme_manager import get_theme_registry, get_fusion_palette
 
-__version__ = "0.4.5"
+__version__ = "0.5.0"
 
 
 if getattr(sys, 'frozen', False):
@@ -392,6 +393,7 @@ class GitInfoDialog(QDialog):
         self.setMinimumSize(620, 520)
         self._name = project_name
         self._path = project_path
+        self._zoom_manager = ZoomManager.instance()
 
         layout = QVBoxLayout(self)
         layout.setSpacing(6)
@@ -533,9 +535,41 @@ class GitInfoDialog(QDialog):
 
         layout.addWidget(self._tabs)
 
+        self._mono_edits = [
+            self._show_edit, self._log_edit, self._gitshow_edit,
+            self._diff_edit, self._status_edit, self._stash_edit,
+            self._remote_edit, self._branches_edit, self._tags_edit,
+            self._config_edit, self._gitlog_edit, self._blame_edit,
+            self._grep_edit, self._shortlog_edit,
+        ]
+        self._mono_viewports = {edit.viewport() for edit in self._mono_edits}
+        for edit in self._mono_edits:
+            edit.viewport().installEventFilter(self)
+
         # ── Buttons ───────────────────────────────────────────────
         btn_row = QHBoxLayout()
+
+        zoom_out_btn = QPushButton("−")
+        zoom_out_btn.setFixedWidth(28)
+        zoom_out_btn.setToolTip("Zoom Out (Ctrl+-)")
+        zoom_out_btn.clicked.connect(self._zoom_out)
+
+        self._zoom_label = QPushButton(f"{self._zoom_manager.get_zoom_percentage()}%")
+        self._zoom_label.setFixedWidth(48)
+        self._zoom_label.setToolTip("Reset Zoom (Ctrl+0)")
+        self._zoom_label.setFlat(True)
+        self._zoom_label.clicked.connect(self._zoom_reset)
+
+        zoom_in_btn = QPushButton("+")
+        zoom_in_btn.setFixedWidth(28)
+        zoom_in_btn.setToolTip("Zoom In (Ctrl++)")
+        zoom_in_btn.clicked.connect(self._zoom_in)
+
+        btn_row.addWidget(zoom_out_btn)
+        btn_row.addWidget(self._zoom_label)
+        btn_row.addWidget(zoom_in_btn)
         btn_row.addStretch()
+
         refresh_btn = QPushButton("Refresh")
         refresh_btn.clicked.connect(self._populate)
         close_btn = QPushButton("Close")
@@ -543,6 +577,9 @@ class GitInfoDialog(QDialog):
         btn_row.addWidget(refresh_btn)
         btn_row.addWidget(close_btn)
         layout.addLayout(btn_row)
+
+        self._zoom_manager.zoom_changed.connect(self._on_zoom_changed)
+        self._apply_mono_font()
 
         self._populate()
 
@@ -622,6 +659,69 @@ class GitInfoDialog(QDialog):
             args += ["--", glob]
         out = self._git_text(*args)
         self._grep_edit.setPlainText(out if out.strip() else f"(no matches for '{pattern}')")
+
+    # ── Zoom ─────────────────────────────────────────────────────
+
+    def _zoom_in(self):
+        self._zoom_manager.zoom_in(QApplication.instance())
+
+    def _zoom_out(self):
+        self._zoom_manager.zoom_out(QApplication.instance())
+
+    def _zoom_reset(self):
+        self._zoom_manager.reset_zoom(QApplication.instance())
+
+    def _apply_mono_font(self):
+        factor = self._zoom_manager.get_current_zoom()
+        size = max(8, int(12 * factor))
+        ss = f"font-family: monospace; font-size: {size}px;"
+        for edit in self._mono_edits:
+            edit.setStyleSheet(ss)
+
+    def _on_zoom_changed(self, factor: float):
+        self._zoom_label.setText(f"{int(factor * 100)}%")
+        self._apply_mono_font()
+
+    def keyPressEvent(self, event):
+        if event.modifiers() & Qt.KeyboardModifier.ControlModifier:
+            app = QApplication.instance()
+            key = event.key()
+            if key in (Qt.Key.Key_Plus, Qt.Key.Key_Equal):
+                self._zoom_manager.zoom_in(app)
+                event.accept()
+                return
+            elif key == Qt.Key.Key_Minus:
+                self._zoom_manager.zoom_out(app)
+                event.accept()
+                return
+            elif key == Qt.Key.Key_0:
+                self._zoom_manager.reset_zoom(app)
+                event.accept()
+                return
+        super().keyPressEvent(event)
+
+    def eventFilter(self, obj, event):
+        if (event.type() == QEvent.Type.Wheel
+                and obj in self._mono_viewports
+                and event.modifiers() & Qt.KeyboardModifier.ControlModifier):
+            app = QApplication.instance()
+            if event.angleDelta().y() > 0:
+                self._zoom_manager.zoom_in(app)
+            elif event.angleDelta().y() < 0:
+                self._zoom_manager.zoom_out(app)
+            return True  # consume — don't pass to QTextEdit
+        return super().eventFilter(obj, event)
+
+    def wheelEvent(self, event):
+        if event.modifiers() & Qt.KeyboardModifier.ControlModifier:
+            app = QApplication.instance()
+            if event.angleDelta().y() > 0:
+                self._zoom_manager.zoom_in(app)
+            elif event.angleDelta().y() < 0:
+                self._zoom_manager.zoom_out(app)
+            event.accept()
+        else:
+            super().wheelEvent(event)
 
 
 class ClaudeResponseDialog(QDialog):
@@ -1185,11 +1285,41 @@ def main():
     app.setDesktopFileName("git-sync-checker")
     app.setWindowIcon(icons.app_icon())
 
+    # ── Single-instance guard ──────────────────────────────────────
+    _INSTANCE_KEY = "git-sync-checker"
+    socket = QLocalSocket()
+    socket.connectToServer(_INSTANCE_KEY)
+    if socket.waitForConnected(500):
+        # Another instance is already running — ask it to raise itself
+        socket.write(b"raise")
+        socket.flush()
+        socket.disconnectFromServer()
+        sys.exit(0)
+
+    instance_server = QLocalServer()
+    QLocalServer.removeServer(_INSTANCE_KEY)  # clear any stale socket
+    instance_server.listen(_INSTANCE_KEY)
+    # ──────────────────────────────────────────────────────────────
+
     zoom_mgr = ZoomManager.instance()
     zoom_mgr.initialize_base_font(app)
     zoom_mgr.apply_saved_zoom(app)
 
     window = MainWindow()
+
+    def _on_new_instance():
+        conn = instance_server.nextPendingConnection()
+        if conn:
+            conn.waitForReadyRead(200)
+            conn.disconnectFromServer()
+        window.setWindowState(
+            window.windowState() & ~Qt.WindowState.WindowMinimized
+        )
+        window.raise_()
+        window.activateWindow()
+
+    instance_server.newConnection.connect(_on_new_instance)
+
     window.show()
     icons.set_taskbar_icon(window, app_id="com.juren.git-sync-checker")
     if window._prefs.get("auto_check_on_launch", True):

@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.5.0] - 2026-02-24
+
+### Added
+- **Zoom support in Git Info dialog**: zoom in/out/reset controls in the button row (− / 100% / +), `Ctrl++`/`Ctrl+-`/`Ctrl+0` keyboard shortcuts, and `Ctrl+scroll` wheel — all mirroring the main window zoom behaviour.
+- **Tab content font scaling**: all monospace text areas in the Git Info dialog tabs scale with the zoom level (base 12 px, clamped to 8 px minimum), driven directly from the ZoomManager factor rather than the app-wide font so the hardcoded stylesheet sizes are respected.
+- **Single-instance enforcement**: launching a second copy of GSC signals the running instance to raise and focus its window (via `QLocalServer`/`QLocalSocket`), then exits immediately.
+
 ## [0.4.5] - 2026-02-23
 
 ### Added
