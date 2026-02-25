@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.5.2] - 2026-02-25
+
+### Fixed
+- **Latest version column font**: removed hardcoded `font-size` from the version label stylesheet so it inherits the application font and scales correctly with ZoomManager.
+- **"Project Sync Status" header font**: replaced the hardcoded `QFont("Segoe UI", 14, Bold)` with a font derived from the widget's inherited app font, retaining bold weight while allowing ZoomManager to control the size.
+
 ## [0.5.1] - 2026-02-24
 
 ### Added

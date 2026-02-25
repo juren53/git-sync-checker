@@ -19,7 +19,7 @@ from pyqt_app_info import AppIdentity, gather_info
 from pyqt_app_info.qt import AboutDialog
 from theme_manager import get_theme_registry, get_fusion_palette
 
-__version__ = "0.5.1"
+__version__ = "0.5.2"
 
 
 if getattr(sys, 'frozen', False):
@@ -837,7 +837,9 @@ class MainWindow(QMainWindow):
         main_layout = QVBoxLayout(central_widget)
 
         header = QLabel("Project Sync Status")
-        header.setFont(QFont("Segoe UI", 14, QFont.Weight.Bold))
+        _header_font = header.font()
+        _header_font.setBold(True)
+        header.setFont(_header_font)
         main_layout.addWidget(header)
 
         self.status_frame = QFrame()
@@ -911,7 +913,7 @@ class MainWindow(QMainWindow):
 
         version_label = QLabel("—")
         version_label.setFixedWidth(62)
-        version_label.setStyleSheet("color: #888888; font-size: 11px;")
+        version_label.setStyleSheet("color: #888888;")
         version_label.setToolTip("Latest git tag")
 
         status_label = QLabel("⏳ Checking...")
