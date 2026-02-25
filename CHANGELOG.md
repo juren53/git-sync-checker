@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.5.3] - 2026-02-25
+
+### Fixed
+- **Version label resets to dash on zoom**: rebuilding the project grid on zoom change now replays the last known git results (`_last_results` cache) so version text, status, commit counts, and sync button state are all restored after the UI is reconstructed.
+- **Version label font on Windows**: explicitly re-apply `app.font()` after `setStyleSheet()` on the version label; on Windows, applying any stylesheet resets the widget font to the system default instead of inheriting from `QApplication.setFont()`.
+
 ## [0.5.2] - 2026-02-25
 
 ### Fixed
