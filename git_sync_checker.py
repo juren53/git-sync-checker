@@ -873,6 +873,7 @@ class MainWindow(QMainWindow):
         self._stash_threads: list[GitStashSyncThread] = []
         self._claude_threads: list[ClaudeResponseThread] = []
         self._dirty_state: dict[str, bool] = {}
+        self._last_results: dict[str, tuple] = {}
 
         self._prefs = load_preferences()
         self._refresh_timer = QTimer(self)
@@ -914,6 +915,9 @@ class MainWindow(QMainWindow):
         version_label = QLabel("—")
         version_label.setFixedWidth(62)
         version_label.setStyleSheet("color: #888888;")
+        # On Windows, setStyleSheet() can reset the widget font to the system
+        # default instead of inheriting from app.setFont(). Re-apply explicitly.
+        version_label.setFont(QApplication.instance().font())
         version_label.setToolTip("Latest git tag")
 
         status_label = QLabel("⏳ Checking...")
@@ -948,6 +952,7 @@ class MainWindow(QMainWindow):
         self.git_thread.start()
 
     def on_result_ready(self, name, status, ahead, behind, dirty, stash_count, version):
+        self._last_results[name] = (name, status, ahead, behind, dirty, stash_count, version)
         row = self.project_widgets[name]
         self._dirty_state[name] = dirty
         row["version"].setText(version)
@@ -1246,6 +1251,8 @@ class MainWindow(QMainWindow):
 
     def _on_zoom_changed(self, factor: float):
         self._initialize_project_ui()
+        for args in self._last_results.values():
+            self.on_result_ready(*args)
         zoom_pct = self.zoom_manager.get_zoom_percentage()
         self.statusBar().showMessage(f"Zoom: {zoom_pct}%", 2000)
 
