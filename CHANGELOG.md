@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.5.6a] - 2026-02-26
+
+### Added
+- **Uncommitted Changes dialog**: clicking Sync on a project with local uncommitted changes now opens a rich per-file dialog instead of the previous read-only list. Each file row shows a colour-coded status badge and three action buttons — **Diff** (opens a monospace diff viewer), **Stage** (`git add`), and **Discard** (`git restore` for tracked files; `git clean -f` with confirmation for untracked). A commit-message field and **Commit Staged** / **Push** buttons allow committing and pushing without leaving the dialog. The existing **Stash → Pull → Restore** flow remains available. After a commit or push the main window automatically rechecks status.
+
+### Fixed
+- **Sync button enabled for dirty repos**: the Sync button is now enabled whenever a project has uncommitted local changes (regardless of ahead/behind state), so the new Uncommitted Changes dialog is always reachable.
+- **Diff viewer empty for staged files**: the diff viewer now runs both `git diff -- file` (unstaged changes) and `git diff --cached HEAD -- file` (staged changes) and combines the output, fixing cases where `git diff HEAD -- file` returned nothing.
+- **File path off-by-one in status parser**: `_parse_status` now uses `line[2:].lstrip()` instead of `line[3:]` to extract the filename from `git status --porcelain` output, correctly handling the single-space separator git emits on this platform.
+
 ## [0.5.6] - 2026-02-26
 
 ### Added

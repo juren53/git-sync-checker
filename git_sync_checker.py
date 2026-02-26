@@ -7,7 +7,7 @@ from PyQt6.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout,
                              QHBoxLayout, QPushButton, QLabel, QFrame, QMessageBox, QFileDialog,
                              QDialog, QDialogButtonBox, QScrollArea, QTextEdit,
                              QSpinBox, QCheckBox, QFormLayout, QComboBox, QGridLayout, QTabWidget,
-                             QLineEdit, QTextBrowser)
+                             QLineEdit, QTextBrowser, QPlainTextEdit)
 from PyQt6.QtCore import QThread, pyqtSignal, Qt, QTimer, QUrl, QEvent
 from PyQt6.QtNetwork import QLocalServer, QLocalSocket
 from PyQt6.QtGui import QDesktopServices
@@ -19,7 +19,7 @@ from pyqt_app_info import AppIdentity, gather_info
 from pyqt_app_info.qt import AboutDialog
 from theme_manager import get_theme_registry, get_fusion_palette
 
-__version__ = "0.5.6"
+__version__ = "0.5.6a"
 
 
 if getattr(sys, 'frozen', False):
@@ -211,6 +211,18 @@ class GitStashSyncThread(QThread):
         self.sync_done.emit(self.name, ok, msg)
 
 
+class GitPushThread(QThread):
+    push_done = pyqtSignal(bool, str)   # success, message
+
+    def __init__(self, repo_path):
+        super().__init__()
+        self.path = repo_path
+
+    def run(self):
+        rc, out, err = run_git_command(self.path, "push")
+        self.push_done.emit(rc == 0, out if rc == 0 else err)
+
+
 class ClaudeResponseThread(QThread):
     response_ready = pyqtSignal(str, bool, str)  # name, success, response
 
@@ -304,41 +316,247 @@ def check_git_sync(repo_path):
         return "unknown", 0, 0, dirty
 
 
-class DirtyConflictDialog(QDialog):
-    STASH_ACTION  = 0
-    CANCEL_ACTION = 1
+class UncommittedChangesDialog(QDialog):
+    CLOSE_ACTION     = 0   # user closed, do not sync
+    STASH_ACTION     = 1   # proceed with stash→pull→restore
+    COMMITTED_ACTION = 2   # user committed/pushed inside dialog
 
-    def __init__(self, project_name, dirty_files, parent=None):
+    def __init__(self, project_name, repo_path, parent=None):
         super().__init__(parent)
         self.setWindowTitle(f"Uncommitted Changes \u2014 {project_name}")
-        self.setMinimumWidth(420)
-        self._action = self.CANCEL_ACTION
+        self.setMinimumWidth(560)
+        self._project_name = project_name
+        self._repo_path = repo_path
+        self._action = self.CLOSE_ACTION
+        self._push_thread = None
+
         layout = QVBoxLayout(self)
 
-        info = QLabel(f"<b>{project_name}</b> has uncommitted changes.\nChoose how to proceed:")
-        info.setWordWrap(True)
-        layout.addWidget(info)
+        self._info_label = QLabel()
+        self._info_label.setWordWrap(True)
+        layout.addWidget(self._info_label)
 
-        # Scrollable file list
-        scroll = QScrollArea()
-        scroll.setWidgetResizable(True)
-        scroll.setMaximumHeight(180)
+        # Scrollable per-file action rows
+        self._scroll = QScrollArea()
+        self._scroll.setWidgetResizable(True)
+        self._scroll.setMinimumHeight(120)
+        self._scroll.setMaximumHeight(240)
+        layout.addWidget(self._scroll)
+
+        # Commit area
+        commit_row = QHBoxLayout()
+        commit_lbl = QLabel("Commit message:")
+        self._commit_msg = QLineEdit()
+        self._commit_msg.setPlaceholderText("Enter commit message…")
+        commit_row.addWidget(commit_lbl)
+        commit_row.addWidget(self._commit_msg, 1)
+        layout.addLayout(commit_row)
+
+        action_row = QHBoxLayout()
+        self._commit_btn = QPushButton("Commit Staged")
+        self._commit_btn.clicked.connect(self._on_commit)
+        self._push_btn = QPushButton("Push")
+        self._push_btn.clicked.connect(self._on_push)
+        action_row.addWidget(self._commit_btn)
+        action_row.addWidget(self._push_btn)
+        action_row.addStretch()
+        layout.addLayout(action_row)
+
+        self._status_lbl = QLabel("")
+        self._status_lbl.setWordWrap(True)
+        layout.addWidget(self._status_lbl)
+
+        sep = QFrame()
+        sep.setFrameShape(QFrame.Shape.HLine)
+        sep.setFrameShadow(QFrame.Shadow.Sunken)
+        layout.addWidget(sep)
+
+        bottom_row = QHBoxLayout()
+        self._stash_btn = QPushButton("Stash \u2192 Pull \u2192 Restore")
+        self._stash_btn.clicked.connect(self._on_stash)
+        close_btn = QPushButton("Close")
+        close_btn.clicked.connect(self._on_close)
+        bottom_row.addWidget(self._stash_btn)
+        bottom_row.addStretch()
+        bottom_row.addWidget(close_btn)
+        layout.addLayout(bottom_row)
+
+        self._refresh()
+
+    # ------------------------------------------------------------------
+    def _parse_status(self):
+        rc, out, _ = run_git_command(self._repo_path, "status", "--porcelain")
+        if rc != 0:
+            return []
+        lines = [l for l in out.splitlines() if l.strip()]
+        result = []
+        for line in lines:
+            if len(line) >= 2:
+                xy = line[:2]
+                fp = line[2:].lstrip()
+                result.append((xy, fp))
+        return result
+
+    def _status_label_for(self, xy):
+        x, y = xy[0], xy[1]
+        if xy == "??":
+            return "New file", "#adb5bd"
+        elif x == "A":
+            return "Added", "#28a745"
+        elif x == "D" or y == "D":
+            return "Deleted", "#dc3545"
+        elif x == "M" or y == "M":
+            return "Modified", "#fd7e14"
+        else:
+            return xy, "#adb5bd"
+
+    def _refresh(self):
+        files = self._parse_status()
+        n = len(files)
+        self._info_label.setText(
+            f"<b>{self._project_name}</b> has {n} uncommitted change(s)."
+        )
+        self._stash_btn.setEnabled(n > 0)
+
         fw = QWidget()
         fl = QVBoxLayout(fw)
-        fl.setSpacing(2)
-        for line in dirty_files:
-            lbl = QLabel(f"  {line}")
-            lbl.setStyleSheet("font-family: monospace; color: #fd7e14;")
-            fl.addWidget(lbl)
-        scroll.setWidget(fw)
-        layout.addWidget(scroll)
+        fl.setSpacing(4)
+        fl.setContentsMargins(4, 4, 4, 4)
 
-        btn_box = QDialogButtonBox()
-        btn_box.addButton("Stash \u2192 Pull \u2192 Restore", QDialogButtonBox.ButtonRole.AcceptRole)
-        btn_box.addButton("Cancel",                           QDialogButtonBox.ButtonRole.RejectRole)
-        btn_box.accepted.connect(lambda: (setattr(self, "_action", self.STASH_ACTION), self.accept()))
-        btn_box.rejected.connect(self.reject)
-        layout.addWidget(btn_box)
+        for xy, fp in files:
+            row = QHBoxLayout()
+            row.setSpacing(6)
+
+            status_text, color = self._status_label_for(xy)
+            badge = QLabel(f"[{xy.strip() or xy}]")
+            badge.setStyleSheet(f"font-family: monospace; color: {color}; min-width: 28px;")
+            badge.setToolTip(status_text)
+
+            name_lbl = QLabel(fp)
+            name_lbl.setStyleSheet("font-family: monospace;")
+            name_lbl.setToolTip(fp)
+
+            is_untracked = (xy == "??")
+
+            diff_btn = QPushButton("Diff")
+            diff_btn.setFixedWidth(48)
+            diff_btn.setEnabled(not is_untracked)
+            if is_untracked:
+                diff_btn.setText("----")
+                diff_btn.setToolTip("No diff for untracked files")
+            diff_btn.clicked.connect(lambda checked, f=fp, s=xy: self._on_diff(f, s))
+
+            stage_btn = QPushButton("Stage")
+            stage_btn.setFixedWidth(52)
+            stage_btn.clicked.connect(lambda checked, f=fp, s=xy: self._on_stage(f, s))
+
+            discard_btn = QPushButton("Discard")
+            discard_btn.setFixedWidth(60)
+            discard_btn.clicked.connect(lambda checked, f=fp, s=xy: self._on_discard(f, s))
+
+            row.addWidget(badge)
+            row.addWidget(name_lbl, 1)
+            row.addWidget(diff_btn)
+            row.addWidget(stage_btn)
+            row.addWidget(discard_btn)
+
+            row_widget = QWidget()
+            row_widget.setLayout(row)
+            fl.addWidget(row_widget)
+
+        fl.addStretch()
+        self._scroll.setWidget(fw)
+
+    # ------------------------------------------------------------------
+    def _on_diff(self, fp, xy):
+        # Unstaged changes: working tree vs index
+        rc1, out1, err1 = run_git_command(self._repo_path, "diff", "--", fp)
+        # Staged changes: index vs HEAD
+        rc2, out2, err2 = run_git_command(self._repo_path, "diff", "--cached", "HEAD", "--", fp)
+        out = "\n".join(x for x in (out1, out2) if x.strip())
+        rc = 0 if (rc1 == 0 or rc2 == 0) else rc1
+        err = "\n".join(x for x in (err1, err2) if x.strip())
+        dlg = QDialog(self)
+        dlg.setWindowTitle(f"Diff — {fp}")
+        dlg.resize(700, 480)
+        vl = QVBoxLayout(dlg)
+        te = QPlainTextEdit()
+        font = QFont("Courier New", 9)
+        font.setStyleHint(QFont.StyleHint.Monospace)
+        te.setFont(font)
+        te.setReadOnly(True)
+        if out.strip():
+            te.setPlainText(out)
+        elif rc != 0:
+            te.setPlainText(f"Error running diff:\n{err}")
+        else:
+            te.setPlainText("(no diff output)")
+        vl.addWidget(te)
+        close = QPushButton("Close")
+        close.clicked.connect(dlg.accept)
+        vl.addWidget(close)
+        dlg.exec()
+
+    def _on_stage(self, fp, xy):
+        run_git_command(self._repo_path, "add", fp)
+        self._refresh()
+
+    def _on_discard(self, fp, xy):
+        if xy == "??":
+            ans = QMessageBox.question(
+                self, "Discard untracked file",
+                f"Permanently delete untracked file:\n{fp}?",
+                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+            )
+            if ans == QMessageBox.StandardButton.Yes:
+                run_git_command(self._repo_path, "clean", "-f", "--", fp)
+        else:
+            run_git_command(self._repo_path, "restore", fp)
+        self._refresh()
+
+    def _on_commit(self):
+        msg = self._commit_msg.text().strip()
+        if not msg:
+            self._status_lbl.setText("Please enter a commit message.")
+            self._status_lbl.setStyleSheet("color: #dc3545;")
+            return
+        rc, out, err = run_git_command(self._repo_path, "commit", "-m", msg)
+        if rc == 0:
+            self._commit_msg.clear()
+            self._action = self.COMMITTED_ACTION
+            self._status_lbl.setText(f"Committed: {out.splitlines()[0] if out else 'OK'}")
+            self._status_lbl.setStyleSheet("color: #28a745;")
+        else:
+            self._status_lbl.setText(f"Commit failed: {err or out}")
+            self._status_lbl.setStyleSheet("color: #dc3545;")
+        self._refresh()
+
+    def _on_push(self):
+        if self._push_thread and self._push_thread.isRunning():
+            return
+        self._push_btn.setEnabled(False)
+        self._status_lbl.setText("Pushing\u2026")
+        self._status_lbl.setStyleSheet("")
+        self._push_thread = GitPushThread(self._repo_path)
+        self._push_thread.push_done.connect(self._on_push_done)
+        self._push_thread.start()
+
+    def _on_push_done(self, success, message):
+        self._push_btn.setEnabled(True)
+        if success:
+            self._action = self.COMMITTED_ACTION
+            self._status_lbl.setText(f"Push succeeded. {message}".strip())
+            self._status_lbl.setStyleSheet("color: #28a745;")
+        else:
+            self._status_lbl.setText(f"Push failed: {message}")
+            self._status_lbl.setStyleSheet("color: #dc3545;")
+
+    def _on_stash(self):
+        self._action = self.STASH_ACTION
+        self.accept()
+
+    def _on_close(self):
+        self.reject()
 
     def chosen_action(self):
         return self._action
@@ -1169,7 +1387,7 @@ class MainWindow(QMainWindow):
             existing_tip = row["status"].toolTip()
             row["status"].setToolTip((existing_tip + "\n" + stash_tip).strip() if existing_tip else stash_tip)
 
-        row["sync_btn"].setEnabled(status == "behind")
+        row["sync_btn"].setEnabled(status == "behind" or (dirty and status != "error"))
 
     def on_finished(self):
         self.refresh_btn.setEnabled(True)
@@ -1189,25 +1407,27 @@ class MainWindow(QMainWindow):
             return
 
         if self._dirty_state.get(name, False):
-            rc, out, _ = run_git_command(path, "status", "--porcelain")
-            dirty_files = [l for l in out.splitlines() if l.strip()] if rc == 0 else []
-            if dirty_files:
-                SyncLogger.log({"event": "dirty_conflict", "project": name, "dirty_files": dirty_files})
-                dlg = DirtyConflictDialog(name, dirty_files, parent=self)
-                dlg.exec()
-                if dlg.chosen_action() == DirtyConflictDialog.CANCEL_ACTION:
-                    SyncLogger.log({"event": "user_action", "project": name, "action": "cancel"})
-                    return
-                SyncLogger.log({"event": "user_action", "project": name, "action": "stash_pull_restore"})
-                row["sync_btn"].setEnabled(False)
-                row["status"].setText("\u23f3 Stashing...")
-                row["status"].setStyleSheet("")
-                row["count"].setText("")
-                thread = GitStashSyncThread(name, path)
-                thread.sync_done.connect(self.on_sync_done)
-                thread.start()
-                self._stash_threads.append(thread)
+            dlg = UncommittedChangesDialog(name, path, parent=self)
+            dlg.exec()
+            action = dlg.chosen_action()
+            if action == UncommittedChangesDialog.CLOSE_ACTION:
+                SyncLogger.log({"event": "user_action", "project": name, "action": "cancel"})
                 return
+            elif action == UncommittedChangesDialog.COMMITTED_ACTION:
+                SyncLogger.log({"event": "user_action", "project": name, "action": "committed_in_dialog"})
+                self.start_check()
+                return
+            # else STASH_ACTION → fall through to stash thread
+            SyncLogger.log({"event": "user_action", "project": name, "action": "stash_pull_restore"})
+            row["sync_btn"].setEnabled(False)
+            row["status"].setText("\u23f3 Stashing...")
+            row["status"].setStyleSheet("")
+            row["count"].setText("")
+            thread = GitStashSyncThread(name, path)
+            thread.sync_done.connect(self.on_sync_done)
+            thread.start()
+            self._stash_threads.append(thread)
+            return
 
         row["sync_btn"].setEnabled(False)
         row["status"].setText("⏳ Syncing...")
