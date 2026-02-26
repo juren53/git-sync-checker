@@ -19,7 +19,7 @@ from pyqt_app_info import AppIdentity, gather_info
 from pyqt_app_info.qt import AboutDialog
 from theme_manager import get_theme_registry, get_fusion_palette
 
-__version__ = "0.5.5a"
+__version__ = "0.5.6"
 
 
 if getattr(sys, 'frozen', False):
@@ -342,6 +342,62 @@ class DirtyConflictDialog(QDialog):
 
     def chosen_action(self):
         return self._action
+
+
+class SyncPreviewDialog(QDialog):
+    """Shows incoming file changes before the user confirms a sync."""
+
+    def __init__(self, project_name, incoming_files, parent=None):
+        super().__init__(parent)
+        self.setWindowTitle(f"Files to Sync \u2014 {project_name}")
+        self.setMinimumWidth(480)
+        layout = QVBoxLayout(self)
+
+        if incoming_files:
+            info = QLabel(
+                f"<b>{project_name}</b>: {len(incoming_files)} file(s) will be updated from remote:"
+            )
+        else:
+            info = QLabel(
+                f"<b>{project_name}</b>: No individual file changes detected in incoming commits."
+            )
+        info.setWordWrap(True)
+        layout.addWidget(info)
+
+        if incoming_files:
+            scroll = QScrollArea()
+            scroll.setWidgetResizable(True)
+            scroll.setMaximumHeight(220)
+            fw = QWidget()
+            fl = QVBoxLayout(fw)
+            fl.setSpacing(2)
+            _colors = {"A": "#28a745", "D": "#dc3545", "M": "#fd7e14", "R": "#17a2b8", "C": "#17a2b8"}
+            for line in incoming_files:
+                status_char = line[0].upper() if line else "M"
+                color = _colors.get(status_char, "#adb5bd")
+                lbl = QLabel(f"  {line}")
+                lbl.setStyleSheet(f"font-family: monospace; color: {color};")
+                fl.addWidget(lbl)
+            fl.addStretch()
+            scroll.setWidget(fw)
+            layout.addWidget(scroll)
+
+            legend = QLabel(
+                '<span style="color:#28a745">A</span>=added &nbsp; '
+                '<span style="color:#fd7e14">M</span>=modified &nbsp; '
+                '<span style="color:#dc3545">D</span>=deleted &nbsp; '
+                '<span style="color:#17a2b8">R/C</span>=renamed/copied'
+            )
+            legend.setTextFormat(Qt.TextFormat.RichText)
+            layout.addWidget(legend)
+
+        btn_box = QDialogButtonBox(
+            QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel
+        )
+        btn_box.button(QDialogButtonBox.StandardButton.Ok).setText("Sync")
+        btn_box.accepted.connect(self.accept)
+        btn_box.rejected.connect(self.reject)
+        layout.addWidget(btn_box)
 
 
 class SyncHistoryDialog(QDialog):
@@ -1124,6 +1180,13 @@ class MainWindow(QMainWindow):
         idx = PROJECT_NAMES.index(name)
         path = PROJECT_PATHS[idx]
         row = self.project_widgets[name]
+
+        # Show incoming-file preview; user must confirm before syncing proceeds.
+        rc_prev, prev_out, _ = run_git_command(path, "diff", "HEAD..@{u}", "--name-status")
+        incoming_files = [l for l in prev_out.splitlines() if l.strip()] if rc_prev == 0 else []
+        preview = SyncPreviewDialog(name, incoming_files, parent=self)
+        if preview.exec() != QDialog.DialogCode.Accepted:
+            return
 
         if self._dirty_state.get(name, False):
             rc, out, _ = run_git_command(path, "status", "--porcelain")

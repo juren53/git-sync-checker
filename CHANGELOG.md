@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.5.6] - 2026-02-26
+
+### Added
+- **Sync preview dialog**: clicking the Sync button now shows a "Files to Sync" confirmation dialog before any sync operation begins. The dialog lists every file that will be updated from the remote (`git diff HEAD..@{u} --name-status`), colour-coded by change type (green=added, orange=modified, red=deleted, blue=renamed/copied), with a colour legend. The user can confirm with **Sync** or abort with **Cancel**. The existing dirty-file / stash flow is unchanged and follows after confirmation.
+
 ## [0.5.5a] - 2026-02-26
 
 ### Changed
