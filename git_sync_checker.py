@@ -1391,6 +1391,9 @@ class MainWindow(QMainWindow):
         userguide_action = QAction("&User Guide", self)
         userguide_action.triggered.connect(self._action_user_guide)
         help_menu.addAction(userguide_action)
+        issuelog_action = QAction("&Issue Log", self)
+        issuelog_action.triggered.connect(self._action_issue_log)
+        help_menu.addAction(issuelog_action)
         help_menu.addSeparator()
         about_action = QAction("&About", self)
         about_action.triggered.connect(self._action_about)
@@ -1420,6 +1423,9 @@ class MainWindow(QMainWindow):
         github = "https://raw.githubusercontent.com/juren53/git-sync-checker/master/CHANGELOG.md"
         content, note = _load_doc_with_fallback(local, github, "Changelog")
         DocViewerDialog("Changelog", content, note, parent=self).exec()
+
+    def _action_issue_log(self):
+        QDesktopServices.openUrl(QUrl("https://github.com/juren53/git-sync-checker/issues"))
 
     def _action_user_guide(self):
         local = _get_bundled_path("README.md")
