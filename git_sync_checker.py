@@ -7,7 +7,7 @@ from PyQt6.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout,
                              QHBoxLayout, QPushButton, QLabel, QFrame, QMessageBox, QFileDialog,
                              QDialog, QDialogButtonBox, QScrollArea, QTextEdit,
                              QSpinBox, QCheckBox, QFormLayout, QComboBox, QGridLayout, QTabWidget,
-                             QLineEdit)
+                             QLineEdit, QTextBrowser)
 from PyQt6.QtCore import QThread, pyqtSignal, Qt, QTimer, QUrl, QEvent
 from PyQt6.QtNetwork import QLocalServer, QLocalSocket
 from PyQt6.QtGui import QDesktopServices
