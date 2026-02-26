@@ -19,7 +19,7 @@ from pyqt_app_info import AppIdentity, gather_info
 from pyqt_app_info.qt import AboutDialog
 from theme_manager import get_theme_registry, get_fusion_palette
 
-__version__ = "0.5.4"
+__version__ = "0.5.5"
 
 
 if getattr(sys, 'frozen', False):
@@ -30,6 +30,43 @@ else:
 CONFIG_FILE = os.path.join(_base_dir, "config.json")
 LOG_FILE = os.path.join(_base_dir, "sync_history.json")
 MAX_LOG_ENTRIES = 200
+
+
+def _get_bundled_path(filename):
+    """Return path to a data file bundled in the exe (_MEIPASS) or in the source directory."""
+    if getattr(sys, 'frozen', False):
+        meipass = getattr(sys, '_MEIPASS', None)
+        if meipass:
+            p = os.path.join(meipass, filename)
+            if os.path.exists(p):
+                return p
+    return os.path.join(_base_dir, filename)
+
+
+def _load_doc_with_fallback(local_path, github_url, doc_name):
+    """Load a markdown document from local path; fall back to GitHub raw URL."""
+    local_err = None
+    try:
+        with open(local_path, encoding="utf-8", errors="replace") as f:
+            return f.read(), None
+    except OSError as e:
+        local_err = str(e)
+
+    github_err = None
+    try:
+        from urllib.request import urlopen
+        from urllib.error import URLError
+        with urlopen(github_url, timeout=10) as resp:
+            content = resp.read().decode("utf-8")
+            return content, "*(Loaded from GitHub — local file not available.)*"
+    except Exception as e:
+        github_err = str(e)
+
+    return (
+        f"# {doc_name}\n\nUnable to load documentation.\n\n"
+        f"**Local:** {local_err}\n\n**GitHub:** {github_err}\n",
+        None,
+    )
 
 
 def load_projects():
@@ -823,6 +860,75 @@ def _show_text_file_dialog(parent, title, file_path):
     dlg.exec()
 
 
+class DocViewerDialog(QDialog):
+    """Renders a markdown document (changelog, user guide) in a themed QTextBrowser.
+    Falls back to plain text if the `markdown` library is unavailable."""
+
+    def __init__(self, title, markdown_text, source_note=None, parent=None):
+        super().__init__(parent)
+        self.setWindowTitle(title)
+        self.resize(800, 560)
+        layout = QVBoxLayout(self)
+
+        browser = QTextBrowser()
+        browser.setOpenExternalLinks(True)
+
+        html = self._render(markdown_text, source_note)
+        if html is None:
+            plain = markdown_text
+            if source_note:
+                plain += f"\n\n{source_note}"
+            browser.setPlainText(plain)
+        else:
+            browser.setHtml(html)
+
+        layout.addWidget(browser)
+
+        btn_box = QDialogButtonBox(QDialogButtonBox.StandardButton.Close)
+        btn_box.rejected.connect(self.accept)
+        layout.addWidget(btn_box)
+
+    def _render(self, markdown_text, source_note):
+        """Return themed HTML string, or None if markdown library is unavailable."""
+        try:
+            import markdown as _md
+        except ImportError:
+            return None
+
+        if source_note:
+            markdown_text += f"\n\n{source_note}"
+
+        body = _md.markdown(
+            markdown_text,
+            extensions=["fenced_code", "tables", "nl2br", "toc"],
+        )
+
+        palette = QApplication.instance().palette()
+        bg = palette.color(palette.ColorRole.Window)
+        is_dark = (bg.red() + bg.green() + bg.blue()) / 3 < 128
+        if is_dark:
+            page_css = "background:#1e1e1e; color:#c8c8c8;"
+            code_css = "background:#2d2d2d; color:#ccc;"
+            border_color = "#555"
+        else:
+            page_css = "background:#ffffff; color:#212529;"
+            code_css = "background:#f5f5f5; color:#333;"
+            border_color = "#ccc"
+
+        return f"""<!DOCTYPE html><html><head><style>
+body {{ {page_css} font-family: sans-serif; padding: 14px; line-height: 1.5; }}
+h1, h2, h3 {{ border-bottom: 1px solid {border_color}; padding-bottom: 4px; }}
+code {{ {code_css} font-family: monospace; border-radius: 3px; padding: 2px 5px; }}
+pre {{ {code_css} font-family: monospace; padding: 10px; border-radius: 4px; overflow-x: auto; }}
+pre code {{ padding: 0; background: none; }}
+table {{ border-collapse: collapse; width: 100%; margin: 8px 0; }}
+th, td {{ border: 1px solid {border_color}; padding: 6px 10px; }}
+th {{ font-weight: bold; }}
+a {{ color: #58a6ff; }}
+blockquote {{ border-left: 4px solid {border_color}; margin: 0; padding-left: 12px; color: #888; }}
+</style></head><body>{body}</body></html>"""
+
+
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
@@ -1244,12 +1350,16 @@ class MainWindow(QMainWindow):
             self._apply_theme()
 
     def _action_changelog(self):
-        changelog_path = os.path.join(_base_dir, "CHANGELOG.md")
-        QDesktopServices.openUrl(QUrl.fromLocalFile(changelog_path))
+        local = _get_bundled_path("CHANGELOG.md")
+        github = "https://raw.githubusercontent.com/juren53/git-sync-checker/master/CHANGELOG.md"
+        content, note = _load_doc_with_fallback(local, github, "Changelog")
+        DocViewerDialog("Changelog", content, note, parent=self).exec()
 
     def _action_user_guide(self):
-        readme_path = os.path.join(_base_dir, "README.md")
-        QDesktopServices.openUrl(QUrl.fromLocalFile(readme_path))
+        local = _get_bundled_path("README.md")
+        github = "https://raw.githubusercontent.com/juren53/git-sync-checker/master/README.md"
+        content, note = _load_doc_with_fallback(local, github, "User Guide")
+        DocViewerDialog("User Guide", content, note, parent=self).exec()
 
     def _zoom_in(self):
         app = QApplication.instance()

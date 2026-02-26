@@ -5,7 +5,7 @@ a = Analysis(
     ['git_sync_checker.py'],
     pathex=[],
     binaries=[],
-    datas=[('resources/icons', 'resources/icons')],
+    datas=[('resources/icons', 'resources/icons'), ('CHANGELOG.md', '.'), ('README.md', '.')],
     hiddenimports=[],
     hookspath=[],
     hooksconfig={},

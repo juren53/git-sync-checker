@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.5.5] - 2026-02-26
+
+### Added
+- **In-app Changelog and User Guide viewer**: Help › Changelog and Help › User Guide now open a themed, scrollable dialog that renders the markdown document directly inside the app. When running as a compiled exe, the bundled copies of `CHANGELOG.md` and `README.md` are used; if they are not present (e.g. the exe was moved), GSC automatically fetches the documents from the GitHub repository as a fallback. A plain-text fallback is used if the `markdown` rendering library is unavailable.
+
 ## [0.5.4] - 2026-02-26
 
 ### Added
