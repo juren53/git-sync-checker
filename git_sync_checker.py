@@ -19,7 +19,7 @@ from pyqt_app_info import AppIdentity, gather_info
 from pyqt_app_info.qt import AboutDialog
 from theme_manager import get_theme_registry, get_fusion_palette
 
-__version__ = "0.5.5"
+__version__ = "0.5.5a"
 
 
 if getattr(sys, 'frozen', False):
@@ -48,7 +48,7 @@ def _load_doc_with_fallback(local_path, github_url, doc_name):
     local_err = None
     try:
         with open(local_path, encoding="utf-8", errors="replace") as f:
-            return f.read(), None
+            return f.read(), "Local file"
     except OSError as e:
         local_err = str(e)
 
@@ -58,7 +58,7 @@ def _load_doc_with_fallback(local_path, github_url, doc_name):
         from urllib.error import URLError
         with urlopen(github_url, timeout=10) as resp:
             content = resp.read().decode("utf-8")
-            return content, "*(Loaded from GitHub — local file not available.)*"
+            return content, "GitHub (local file not found)"
     except Exception as e:
         github_err = str(e)
 
@@ -873,30 +873,33 @@ class DocViewerDialog(QDialog):
         browser = QTextBrowser()
         browser.setOpenExternalLinks(True)
 
-        html = self._render(markdown_text, source_note)
+        html = self._render(markdown_text)
         if html is None:
-            plain = markdown_text
-            if source_note:
-                plain += f"\n\n{source_note}"
-            browser.setPlainText(plain)
+            browser.setPlainText(markdown_text)
         else:
             browser.setHtml(html)
 
         layout.addWidget(browser)
 
+        if source_note:
+            source_label = QLabel(f"Source: {source_note}")
+            source_label.setStyleSheet("color: #888888; font-style: italic;")
+            f = source_label.font()
+            f.setPointSizeF(f.pointSizeF() * 0.85)
+            source_label.setFont(f)
+            source_label.setAlignment(Qt.AlignmentFlag.AlignRight)
+            layout.addWidget(source_label)
+
         btn_box = QDialogButtonBox(QDialogButtonBox.StandardButton.Close)
         btn_box.rejected.connect(self.accept)
         layout.addWidget(btn_box)
 
-    def _render(self, markdown_text, source_note):
+    def _render(self, markdown_text):
         """Return themed HTML string, or None if markdown library is unavailable."""
         try:
             import markdown as _md
         except ImportError:
             return None
-
-        if source_note:
-            markdown_text += f"\n\n{source_note}"
 
         body = _md.markdown(
             markdown_text,

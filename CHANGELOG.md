@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.5.5a] - 2026-02-26
+
+### Changed
+- **Doc viewer source label**: the Changelog and User Guide dialogs now display a small, de-emphasized label ("Source: Local file" or "Source: GitHub (local file not found)") in the bottom-right corner, outside the document body, so the origin of the displayed content is always visible.
+
 ## [0.5.5] - 2026-02-26
 
 ### Added
