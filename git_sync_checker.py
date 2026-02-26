@@ -19,7 +19,7 @@ from pyqt_app_info import AppIdentity, gather_info
 from pyqt_app_info.qt import AboutDialog
 from theme_manager import get_theme_registry, get_fusion_palette
 
-__version__ = "0.5.3"
+__version__ = "0.5.4"
 
 
 if getattr(sys, 'frozen', False):
@@ -836,11 +836,23 @@ class MainWindow(QMainWindow):
 
         main_layout = QVBoxLayout(central_widget)
 
+        header_row = QHBoxLayout()
+
         header = QLabel("Project Sync Status")
         _header_font = header.font()
         _header_font.setBold(True)
         header.setFont(_header_font)
-        main_layout.addWidget(header)
+        header_row.addWidget(header)
+
+        header_row.addStretch()
+
+        self.last_refresh_label = QLabel("Last refreshed: —")
+        self.last_refresh_label.setStyleSheet("color: #888888;")
+        self.last_refresh_label.setFont(QApplication.instance().font())
+        self.last_refresh_label.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
+        header_row.addWidget(self.last_refresh_label)
+
+        main_layout.addLayout(header_row)
 
         self.status_frame = QFrame()
         self.status_frame.setFrameShape(QFrame.Shape.StyledPanel)
@@ -996,6 +1008,8 @@ class MainWindow(QMainWindow):
 
     def on_finished(self):
         self.refresh_btn.setEnabled(True)
+        ts = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        self.last_refresh_label.setText(f"Last refreshed: {ts}")
 
     def sync_project(self, name):
         idx = PROJECT_NAMES.index(name)

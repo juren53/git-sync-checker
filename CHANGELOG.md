@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.5.4] - 2026-02-26
+
+### Added
+- **Last refreshed timestamp in main UI**: the upper-right of the main window now shows "Last refreshed: YYYY-MM-DD HH:MM:SS", updated after every status check (manual or auto-refresh). Starts as "—" until the first check completes.
+
 ## [0.5.3] - 2026-02-25
 
 ### Fixed
