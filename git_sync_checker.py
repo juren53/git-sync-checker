@@ -19,7 +19,7 @@ from pyqt_app_info import AppIdentity, gather_info
 from pyqt_app_info.qt import AboutDialog
 from theme_manager import get_theme_registry, get_fusion_palette
 
-__version__ = "0.5.6a"
+__version__ = "0.5.7"
 
 
 if getattr(sys, 'frozen', False):
@@ -111,6 +111,40 @@ def save_preferences(prefs):
         with open(CONFIG_FILE, "r") as f:
             data = json.load(f)
     data["preferences"] = prefs
+    with open(CONFIG_FILE, "w") as f:
+        json.dump(data, f, indent=4)
+
+
+def load_window_geometry(key):
+    """Return saved {x, y, width, height} dict for *key*, or None."""
+    if not os.path.exists(CONFIG_FILE):
+        return None
+    with open(CONFIG_FILE, "r") as f:
+        data = json.load(f)
+    geom = data.get("window_geometry", {}).get(key)
+    if not geom:
+        return None
+    # Validate that the saved position is on a visible screen
+    from PyQt6.QtGui import QGuiApplication
+    target = QGuiApplication.primaryScreen()
+    for screen in QGuiApplication.screens():
+        sg = screen.availableGeometry()
+        if sg.contains(geom["x"], geom["y"]):
+            target = screen
+            break
+    else:
+        # Saved position is off-screen; discard it
+        return None
+    return geom
+
+
+def save_window_geometry(key, geom):
+    """Persist {x, y, width, height} under config.window_geometry[key]."""
+    data = {}
+    if os.path.exists(CONFIG_FILE):
+        with open(CONFIG_FILE, "r") as f:
+            data = json.load(f)
+    data.setdefault("window_geometry", {})[key] = geom
     with open(CONFIG_FILE, "w") as f:
         json.dump(data, f, indent=4)
 
@@ -624,6 +658,10 @@ class SyncHistoryDialog(QDialog):
         self.setWindowTitle("Sync History")
         self.setMinimumWidth(500)
         self.setMinimumHeight(400)
+        geom = load_window_geometry("sync_history")
+        if geom:
+            self.resize(geom["width"], geom["height"])
+            self.move(geom["x"], geom["y"])
         layout = QVBoxLayout(self)
 
         title = QLabel("Sync History (newest first)")
@@ -671,6 +709,14 @@ class SyncHistoryDialog(QDialog):
         close_btn.clicked.connect(self.accept)
         layout.addWidget(close_btn)
 
+    def done(self, result):
+        g = self.geometry()
+        save_window_geometry("sync_history", {
+            "x": g.x(), "y": g.y(),
+            "width": g.width(), "height": g.height(),
+        })
+        super().done(result)
+
     def _format_entry(self, entry, event):
         if event == "dirty_detected":
             return "Dirty tree detected", "#e6ac00"
@@ -706,6 +752,10 @@ class GitInfoDialog(QDialog):
         self.setMinimumSize(620, 520)
         self._name = project_name
         self._path = project_path
+        geom = load_window_geometry("git_info")
+        if geom:
+            self.resize(geom["width"], geom["height"])
+            self.move(geom["x"], geom["y"])
         self._zoom_manager = ZoomManager.instance()
 
         layout = QVBoxLayout(self)
@@ -1013,6 +1063,14 @@ class GitInfoDialog(QDialog):
                 return
         super().keyPressEvent(event)
 
+    def done(self, result):
+        g = self.geometry()
+        save_window_geometry("git_info", {
+            "x": g.x(), "y": g.y(),
+            "width": g.width(), "height": g.height(),
+        })
+        super().done(result)
+
     def eventFilter(self, obj, event):
         if (event.type() == QEvent.Type.Wheel
                 and obj in self._mono_viewports
@@ -1212,6 +1270,7 @@ class MainWindow(QMainWindow):
         self.setWindowTitle(f"Git Sync Checker v{__version__}")
         self.setMinimumSize(500, 300)
         self.setWindowIcon(icons.app_icon())
+        self._restore_geometry("main")
         self._setup_menu_bar()
 
         central_widget = QWidget()
@@ -1683,7 +1742,18 @@ class MainWindow(QMainWindow):
         else:
             super().wheelEvent(event)
 
+    def _restore_geometry(self, key):
+        geom = load_window_geometry(key)
+        if geom:
+            self.resize(geom["width"], geom["height"])
+            self.move(geom["x"], geom["y"])
+
     def closeEvent(self, event):
+        g = self.geometry()
+        save_window_geometry("main", {
+            "x": g.x(), "y": g.y(),
+            "width": g.width(), "height": g.height(),
+        })
         app = QApplication.instance()
         self.zoom_manager.save_zoom_preference(app)
         event.accept()

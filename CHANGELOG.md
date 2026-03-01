@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.5.7] - 2026-03-01
+
+### Added
+- **Window geometry persistence**: the main window, Git Info dialog, and Sync History dialog now remember their last position and size across sessions, stored in `config.json`. Saved positions are validated against available screens to avoid off-screen placement.
+
 ## [0.5.6a] - 2026-02-26
 
 ### Added
