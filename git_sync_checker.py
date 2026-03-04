@@ -19,7 +19,7 @@ from pyqt_app_info import AppIdentity, gather_info
 from pyqt_app_info.qt import AboutDialog
 from theme_manager import get_theme_registry, get_fusion_palette
 
-__version__ = "0.5.7"
+__version__ = "0.5.8"
 
 
 if getattr(sys, 'frozen', False):
@@ -463,11 +463,11 @@ class UncommittedChangesDialog(QDialog):
 
             status_text, color = self._status_label_for(xy)
             badge = QLabel(f"[{xy.strip() or xy}]")
-            badge.setStyleSheet(f"font-family: monospace; color: {color}; min-width: 28px;")
+            badge.setStyleSheet(f'font-family: "Courier New", Courier, monospace; color: {color}; min-width: 28px;')
             badge.setToolTip(status_text)
 
             name_lbl = QLabel(fp)
-            name_lbl.setStyleSheet("font-family: monospace;")
+            name_lbl.setStyleSheet("font-family: 'Courier New', Courier, monospace;")
             name_lbl.setToolTip(fp)
 
             is_untracked = (xy == "??")
@@ -628,7 +628,7 @@ class SyncPreviewDialog(QDialog):
                 status_char = line[0].upper() if line else "M"
                 color = _colors.get(status_char, "#adb5bd")
                 lbl = QLabel(f"  {line}")
-                lbl.setStyleSheet(f"font-family: monospace; color: {color};")
+                lbl.setStyleSheet(f'font-family: "Courier New", Courier, monospace; color: {color};')
                 fl.addWidget(lbl)
             fl.addStretch()
             scroll.setWidget(fw)
@@ -771,9 +771,9 @@ class GitInfoDialog(QDialog):
         self._lbl_branch   = QLabel()
         self._lbl_tracking = QLabel()
         self._lbl_head     = QLabel()
-        self._lbl_head.setStyleSheet("font-family: monospace;")
+        self._lbl_head.setStyleSheet("font-family: 'Courier New', Courier, monospace;")
         self._lbl_url      = QLabel()
-        self._lbl_url.setStyleSheet("font-family: monospace; font-size: 11px;")
+        self._lbl_url.setStyleSheet("font-family: 'Courier New', Courier, monospace; font-size: 11px;")
         self._lbl_url.setWordWrap(True)
 
         ov_grid.addWidget(QLabel("<b>Branch:</b>"),   0, 0)
@@ -792,57 +792,57 @@ class GitInfoDialog(QDialog):
 
         self._show_edit = QTextEdit()
         self._show_edit.setReadOnly(True)
-        self._show_edit.setStyleSheet("font-family: monospace; font-size: 12px;")
+        self._show_edit.setStyleSheet("font-family: 'Courier New', Courier, monospace; font-size: 12px;")
         self._tabs.addTab(self._show_edit, "Latest Commit")
 
         self._log_edit = QTextEdit()
         self._log_edit.setReadOnly(True)
-        self._log_edit.setStyleSheet("font-family: monospace; font-size: 12px;")
+        self._log_edit.setStyleSheet("font-family: 'Courier New', Courier, monospace; font-size: 12px;")
         self._tabs.addTab(self._log_edit, "Log (last 20)")
 
         self._gitshow_edit = QTextEdit()
         self._gitshow_edit.setReadOnly(True)
-        self._gitshow_edit.setStyleSheet("font-family: monospace; font-size: 12px;")
+        self._gitshow_edit.setStyleSheet("font-family: 'Courier New', Courier, monospace; font-size: 12px;")
         self._tabs.addTab(self._gitshow_edit, "Git Show")
 
         self._diff_edit = QTextEdit()
         self._diff_edit.setReadOnly(True)
-        self._diff_edit.setStyleSheet("font-family: monospace; font-size: 12px;")
+        self._diff_edit.setStyleSheet("font-family: 'Courier New', Courier, monospace; font-size: 12px;")
         self._tabs.addTab(self._diff_edit, "Git Diff")
 
         self._status_edit = QTextEdit()
         self._status_edit.setReadOnly(True)
-        self._status_edit.setStyleSheet("font-family: monospace; font-size: 12px;")
+        self._status_edit.setStyleSheet("font-family: 'Courier New', Courier, monospace; font-size: 12px;")
         self._tabs.addTab(self._status_edit, "Git Status")
 
         self._stash_edit = QTextEdit()
         self._stash_edit.setReadOnly(True)
-        self._stash_edit.setStyleSheet("font-family: monospace; font-size: 12px;")
+        self._stash_edit.setStyleSheet("font-family: 'Courier New', Courier, monospace; font-size: 12px;")
         self._tabs.addTab(self._stash_edit, "Git Stash")
 
         self._remote_edit = QTextEdit()
         self._remote_edit.setReadOnly(True)
-        self._remote_edit.setStyleSheet("font-family: monospace; font-size: 12px;")
+        self._remote_edit.setStyleSheet("font-family: 'Courier New', Courier, monospace; font-size: 12px;")
         self._tabs.addTab(self._remote_edit, "Git Remote")
 
         self._branches_edit = QTextEdit()
         self._branches_edit.setReadOnly(True)
-        self._branches_edit.setStyleSheet("font-family: monospace; font-size: 12px;")
+        self._branches_edit.setStyleSheet("font-family: 'Courier New', Courier, monospace; font-size: 12px;")
         self._tabs.addTab(self._branches_edit, "Git Branches")
 
         self._tags_edit = QTextEdit()
         self._tags_edit.setReadOnly(True)
-        self._tags_edit.setStyleSheet("font-family: monospace; font-size: 12px;")
+        self._tags_edit.setStyleSheet("font-family: 'Courier New', Courier, monospace; font-size: 12px;")
         self._tabs.addTab(self._tags_edit, "Git Tags")
 
         self._config_edit = QTextEdit()
         self._config_edit.setReadOnly(True)
-        self._config_edit.setStyleSheet("font-family: monospace; font-size: 12px;")
+        self._config_edit.setStyleSheet("font-family: 'Courier New', Courier, monospace; font-size: 12px;")
         self._tabs.addTab(self._config_edit, "Git Config")
 
         self._gitlog_edit = QTextEdit()
         self._gitlog_edit.setReadOnly(True)
-        self._gitlog_edit.setStyleSheet("font-family: monospace; font-size: 12px;")
+        self._gitlog_edit.setStyleSheet("font-family: 'Courier New', Courier, monospace; font-size: 12px;")
         self._tabs.addTab(self._gitlog_edit, "Git Log")
 
         blame_widget = QWidget()
@@ -852,7 +852,7 @@ class GitInfoDialog(QDialog):
         input_row = QHBoxLayout()
         self._blame_input = QLineEdit()
         self._blame_input.setPlaceholderText("Relative file path…")
-        self._blame_input.setStyleSheet("font-family: monospace;")
+        self._blame_input.setStyleSheet("font-family: 'Courier New', Courier, monospace;")
         self._blame_input.returnPressed.connect(self._run_blame)
         browse_btn = QPushButton("Browse…")
         browse_btn.clicked.connect(self._browse_blame_file)
@@ -863,7 +863,7 @@ class GitInfoDialog(QDialog):
         input_row.addWidget(show_btn)
         self._blame_edit = QTextEdit()
         self._blame_edit.setReadOnly(True)
-        self._blame_edit.setStyleSheet("font-family: monospace; font-size: 12px;")
+        self._blame_edit.setStyleSheet("font-family: 'Courier New', Courier, monospace; font-size: 12px;")
         blame_layout.addLayout(input_row)
         blame_layout.addWidget(self._blame_edit)
         self._tabs.addTab(blame_widget, "Git Blame")
@@ -886,14 +886,14 @@ class GitInfoDialog(QDialog):
         grep_row.addWidget(grep_btn)
         self._grep_edit = QTextEdit()
         self._grep_edit.setReadOnly(True)
-        self._grep_edit.setStyleSheet("font-family: monospace; font-size: 12px;")
+        self._grep_edit.setStyleSheet("font-family: 'Courier New', Courier, monospace; font-size: 12px;")
         grep_layout.addLayout(grep_row)
         grep_layout.addWidget(self._grep_edit)
         self._tabs.addTab(grep_widget, "Git Grep")
 
         self._shortlog_edit = QTextEdit()
         self._shortlog_edit.setReadOnly(True)
-        self._shortlog_edit.setStyleSheet("font-family: monospace; font-size: 12px;")
+        self._shortlog_edit.setStyleSheet("font-family: 'Courier New', Courier, monospace; font-size: 12px;")
         self._tabs.addTab(self._shortlog_edit, "Git Shortlog")
 
         layout.addWidget(self._tabs)
@@ -1037,7 +1037,7 @@ class GitInfoDialog(QDialog):
     def _apply_mono_font(self):
         factor = self._zoom_manager.get_current_zoom()
         size = max(8, int(12 * factor))
-        ss = f"font-family: monospace; font-size: {size}px;"
+        ss = f'font-family: "Courier New", Courier, monospace; font-size: {size}px;'
         for edit in self._mono_edits:
             edit.setStyleSheet(ss)
 
@@ -1110,7 +1110,7 @@ class ClaudeResponseDialog(QDialog):
         text_area = QTextEdit()
         text_area.setReadOnly(True)
         text_area.setPlainText(response)
-        text_area.setStyleSheet("font-family: monospace; font-size: 12px;")
+        text_area.setStyleSheet("font-family: 'Courier New', Courier, monospace; font-size: 12px;")
         layout.addWidget(text_area)
 
         btn_layout = QHBoxLayout()
@@ -1179,7 +1179,7 @@ def _show_text_file_dialog(parent, title, file_path):
     layout = QVBoxLayout(dlg)
     text_area = QTextEdit()
     text_area.setReadOnly(True)
-    text_area.setStyleSheet("font-family: monospace; font-size: 12px;")
+    text_area.setStyleSheet("font-family: 'Courier New', Courier, monospace; font-size: 12px;")
     try:
         with open(file_path, "r", encoding="utf-8") as f:
             text_area.setPlainText(f.read())
@@ -1253,8 +1253,8 @@ class DocViewerDialog(QDialog):
         return f"""<!DOCTYPE html><html><head><style>
 body {{ {page_css} font-family: sans-serif; padding: 14px; line-height: 1.5; }}
 h1, h2, h3 {{ border-bottom: 1px solid {border_color}; padding-bottom: 4px; }}
-code {{ {code_css} font-family: monospace; border-radius: 3px; padding: 2px 5px; }}
-pre {{ {code_css} font-family: monospace; padding: 10px; border-radius: 4px; overflow-x: auto; }}
+code {{ {code_css} font-family: "Courier New", Courier, monospace; border-radius: 3px; padding: 2px 5px; }}
+pre {{ {code_css} font-family: "Courier New", Courier, monospace; padding: 10px; border-radius: 4px; overflow-x: auto; }}
 pre code {{ padding: 0; background: none; }}
 table {{ border-collapse: collapse; width: 100%; margin: 8px 0; }}
 th, td {{ border: 1px solid {border_color}; padding: 6px 10px; }}
@@ -1362,7 +1362,7 @@ class MainWindow(QMainWindow):
         name_label.setFlat(True)
         name_label.setCursor(Qt.CursorShape.PointingHandCursor)
         name_label.setToolTip(f"Click to view git details for {name}")
-        name_label.setStyleSheet("text-align: left; padding: 2px 0px; text-decoration: underline;")
+        name_label.setStyleSheet("text-align: left; padding: 2px 0px; font-weight: bold;")
         name_label.setFixedWidth(name_width)
         name_label.clicked.connect(lambda: self.show_git_info(name))
 

@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.5.8] - 2026-03-04
+
+### Changed
+- **Git Info dialog — Courier font**: all dynamic data panels in the Git Info dialog (and other data-display areas) now use `Courier New` instead of the generic monospace font, improving column alignment and overall readability.
+- **Project name styling**: project names in the main window are now bold instead of underlined, improving readability while retaining the pointer cursor to indicate they are clickable.
+
 ## [0.5.7] - 2026-03-01
 
 ### Added
