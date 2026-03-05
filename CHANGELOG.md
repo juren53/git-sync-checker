@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.5.9] - 2026-03-05
+
+### Changed
+- **UI restructure — buttons relocated to menus**: the three bottom buttons have been removed in favour of menu-driven access. **Refresh** is now a centered button above the project list and is also accessible via **View › Refresh** or **F5**. **Add Project** has moved to **Edit › Add Project**. **History** has moved to **View › History**.
+
 ## [0.5.8] - 2026-03-04
 
 ### Changed

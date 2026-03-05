@@ -19,7 +19,7 @@ from pyqt_app_info import AppIdentity, gather_info
 from pyqt_app_info.qt import AboutDialog
 from theme_manager import get_theme_registry, get_fusion_palette
 
-__version__ = "0.5.8"
+__version__ = "0.5.9"
 
 
 if getattr(sys, 'frozen', False):
@@ -1296,6 +1296,14 @@ class MainWindow(QMainWindow):
 
         main_layout.addLayout(header_row)
 
+        refresh_row = QHBoxLayout()
+        refresh_row.addStretch()
+        self.refresh_btn = QPushButton("Refresh")
+        self.refresh_btn.clicked.connect(self.start_check)
+        refresh_row.addWidget(self.refresh_btn)
+        refresh_row.addStretch()
+        main_layout.addLayout(refresh_row)
+
         self.status_frame = QFrame()
         self.status_frame.setFrameShape(QFrame.Shape.StyledPanel)
         self.status_layout = QGridLayout(self.status_frame)
@@ -1306,21 +1314,6 @@ class MainWindow(QMainWindow):
         self.project_widgets: dict[str, dict[str, Any]] = {}
         self._initialize_project_ui()
 
-        button_layout = QHBoxLayout()
-
-        self.refresh_btn = QPushButton("Refresh")
-        self.refresh_btn.clicked.connect(self.start_check)
-        button_layout.addWidget(self.refresh_btn)
-
-        self.add_project_btn = QPushButton("Add Project")
-        self.add_project_btn.clicked.connect(self.add_project_dialog)
-        button_layout.addWidget(self.add_project_btn)
-
-        self.history_btn = QPushButton("History")
-        self.history_btn.clicked.connect(self.show_history_dialog)
-        button_layout.addWidget(self.history_btn)
-
-        main_layout.addLayout(button_layout)
 
         self.git_thread: Optional[QThread] = None
         self._sync_threads: list[GitSyncThread] = []
@@ -1634,12 +1627,28 @@ class MainWindow(QMainWindow):
 
         # Edit
         edit_menu = menu_bar.addMenu("&Edit")
+        add_project_action = QAction("&Add Project", self)
+        add_project_action.triggered.connect(self.add_project_dialog)
+        edit_menu.addAction(add_project_action)
+        edit_menu.addSeparator()
         prefs_action = QAction("&Preferences", self)
         prefs_action.triggered.connect(self._action_preferences)
         edit_menu.addAction(prefs_action)
 
         # View
         view_menu = menu_bar.addMenu("&View")
+
+        refresh_action = QAction("&Refresh", self)
+        refresh_action.triggered.connect(self.start_check)
+        view_menu.addAction(refresh_action)
+
+        f5_action = QAction(self)
+        f5_action.setShortcut("F5")
+        f5_action.setShortcutContext(Qt.ShortcutContext.ApplicationShortcut)
+        f5_action.triggered.connect(self.start_check)
+        self.addAction(f5_action)
+
+        view_menu.addSeparator()
 
         zoom_in_action = QAction("Zoom &In", self)
         zoom_in_action.setShortcut("Ctrl++")
@@ -1661,6 +1670,11 @@ class MainWindow(QMainWindow):
         zoom_reset_action.setShortcut("Ctrl+0")
         zoom_reset_action.triggered.connect(self._zoom_reset)
         view_menu.addAction(zoom_reset_action)
+
+        view_menu.addSeparator()
+        history_action = QAction("&History", self)
+        history_action.triggered.connect(self.show_history_dialog)
+        view_menu.addAction(history_action)
 
         # Help
         help_menu = menu_bar.addMenu("&Help")
