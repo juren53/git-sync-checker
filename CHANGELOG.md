@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.6.0] - 2026-03-15
+
+### Added
+- **GitHub Scan** (`Edit › Scan GitHub for New Projects…`): queries your GitHub account via the `gh` CLI for repositories that have received commits within the last 7 days and are not currently tracked in GSC. Results are shown in a dialog listing each repo's name, last-push date, and an **Open** button to launch it in the browser. Runs in a background thread so the UI stays responsive.
+
 ## [0.5.9] - 2026-03-05
 
 ### Changed

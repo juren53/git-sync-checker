@@ -19,7 +19,7 @@ from pyqt_app_info import AppIdentity, gather_info
 from pyqt_app_info.qt import AboutDialog
 from theme_manager import get_theme_registry, get_fusion_palette
 
-__version__ = "0.5.9"
+__version__ = "0.6.0"
 
 
 if getattr(sys, 'frozen', False):
@@ -292,6 +292,84 @@ class ClaudeResponseThread(QThread):
                 "Request timed out after 60 seconds.")
         except Exception as e:
             self.response_ready.emit(self.name, False, str(e))
+
+
+class GitHubScanThread(QThread):
+    scan_done = pyqtSignal(list, str)  # list of (nameWithOwner, url, pushed_at), error_msg
+
+    def run(self):
+        import re
+
+        # Collect normalized GitHub remote identifiers for all known projects
+        known_remotes: set[str] = set()
+        for path in PROJECT_PATHS:
+            rc, url, _ = run_git_command(path, "remote", "get-url", "origin")
+            if rc == 0 and url.strip():
+                norm = self._normalize_remote(url.strip())
+                if norm:
+                    known_remotes.add(norm.lower())
+
+        # Query GitHub via gh CLI
+        try:
+            kwargs: dict = {}
+            if sys.platform.startswith("win"):
+                kwargs["creationflags"] = subprocess.CREATE_NO_WINDOW
+            result = subprocess.run(
+                ["gh", "repo", "list", "--json", "nameWithOwner,pushedAt,url", "--limit", "200"],
+                capture_output=True,
+                text=True,
+                encoding="utf-8",
+                errors="replace",
+                timeout=30,
+                **kwargs,
+            )
+        except FileNotFoundError:
+            self.scan_done.emit(
+                [], "GitHub CLI (`gh`) not found. Please install it from https://cli.github.com/"
+            )
+            return
+        except subprocess.TimeoutExpired:
+            self.scan_done.emit([], "GitHub CLI timed out.")
+            return
+        except Exception as e:
+            self.scan_done.emit([], str(e))
+            return
+
+        if result.returncode != 0:
+            self.scan_done.emit([], result.stderr.strip() or "gh command failed.")
+            return
+
+        try:
+            repos = json.loads(result.stdout)
+        except json.JSONDecodeError as e:
+            self.scan_done.emit([], f"Failed to parse gh output: {e}")
+            return
+
+        cutoff = datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(days=7)
+        missing = []
+        for repo in repos:
+            pushed_str = repo.get("pushedAt", "")
+            if not pushed_str:
+                continue
+            try:
+                pushed = datetime.datetime.fromisoformat(pushed_str.replace("Z", "+00:00"))
+            except ValueError:
+                continue
+            if pushed < cutoff:
+                continue
+            name_with_owner = repo.get("nameWithOwner", "")
+            url = repo.get("url", "")
+            if name_with_owner.lower() not in known_remotes:
+                missing.append((name_with_owner, url, pushed_str))
+
+        self.scan_done.emit(missing, "")
+
+    @staticmethod
+    def _normalize_remote(url: str) -> str:
+        """Extract 'owner/repo' from a git remote URL (https or ssh)."""
+        import re
+        m = re.search(r'github\.com[:/]([^/]+/[^/]+?)(?:\.git)?$', url)
+        return m.group(1) if m else ""
 
 
 def run_git_command(repo_path, *args):
@@ -1123,6 +1201,64 @@ class ClaudeResponseDialog(QDialog):
         layout.addLayout(btn_layout)
 
 
+class GitHubScanDialog(QDialog):
+    """Reports GitHub repos with recent commits that are not in the GSC project list."""
+
+    def __init__(self, missing_repos: list, parent=None):
+        super().__init__(parent)
+        self.setWindowTitle("GitHub Scan — Untracked Active Repos")
+        self.setMinimumWidth(580)
+        self.setMinimumHeight(320)
+        layout = QVBoxLayout(self)
+
+        if missing_repos:
+            info = QLabel(
+                f"Found <b>{len(missing_repos)}</b> GitHub repo(s) with commits in the last 7 days "
+                f"that are not in your GSC project list:"
+            )
+        else:
+            info = QLabel(
+                "All of your recently active GitHub repos are already tracked in GSC. Nothing to add."
+            )
+        info.setWordWrap(True)
+        layout.addWidget(info)
+
+        if missing_repos:
+            scroll = QScrollArea()
+            scroll.setWidgetResizable(True)
+            fw = QWidget()
+            fl = QVBoxLayout(fw)
+            fl.setSpacing(4)
+            fl.setContentsMargins(4, 4, 4, 4)
+
+            for name, url, pushed_at in sorted(missing_repos, key=lambda x: x[2], reverse=True):
+                row = QHBoxLayout()
+                name_lbl = QLabel(f"<b>{name}</b>")
+                name_lbl.setFixedWidth(260)
+                date_str = pushed_at[:10] if pushed_at else ""
+                date_lbl = QLabel(date_str)
+                date_lbl.setStyleSheet("color: #888888;")
+                date_lbl.setFixedWidth(90)
+                open_btn = QPushButton("Open")
+                open_btn.setFixedWidth(55)
+                open_btn.clicked.connect(lambda checked, u=url: QDesktopServices.openUrl(QUrl(u)))
+                row.addWidget(name_lbl)
+                row.addWidget(date_lbl)
+                row.addWidget(open_btn)
+                row.addStretch()
+                rw = QWidget()
+                rw.setLayout(row)
+                fl.addWidget(rw)
+
+            fl.addStretch()
+            scroll.setWidget(fw)
+            layout.addWidget(scroll)
+
+        btn_box = QDialogButtonBox(QDialogButtonBox.StandardButton.Close)
+        btn_box.rejected.connect(self.accept)
+        layout.addWidget(btn_box)
+
+
 class PreferencesDialog(QDialog):
     def __init__(self, prefs, parent=None):
         super().__init__(parent)
@@ -1319,6 +1455,7 @@ class MainWindow(QMainWindow):
         self._sync_threads: list[GitSyncThread] = []
         self._stash_threads: list[GitStashSyncThread] = []
         self._claude_threads: list[ClaudeResponseThread] = []
+        self._github_scan_thread: Optional[GitHubScanThread] = None
         self._dirty_state: dict[str, bool] = {}
         self._last_results: dict[str, tuple] = {}
 
@@ -1630,6 +1767,9 @@ class MainWindow(QMainWindow):
         add_project_action = QAction("&Add Project", self)
         add_project_action.triggered.connect(self.add_project_dialog)
         edit_menu.addAction(add_project_action)
+        scan_github_action = QAction("Scan &GitHub for New Projects…", self)
+        scan_github_action.triggered.connect(self._action_github_scan)
+        edit_menu.addAction(scan_github_action)
         edit_menu.addSeparator()
         prefs_action = QAction("&Preferences", self)
         prefs_action.triggered.connect(self._action_preferences)
@@ -1710,6 +1850,21 @@ class MainWindow(QMainWindow):
             save_preferences(self._prefs)
             self._apply_auto_refresh()
             self._apply_theme()
+
+    def _action_github_scan(self):
+        if self._github_scan_thread and self._github_scan_thread.isRunning():
+            return
+        self.statusBar().showMessage("Scanning GitHub for recently active repos…")
+        self._github_scan_thread = GitHubScanThread()
+        self._github_scan_thread.scan_done.connect(self._on_github_scan_done)
+        self._github_scan_thread.start()
+
+    def _on_github_scan_done(self, missing_repos: list, error: str):
+        self.statusBar().clearMessage()
+        if error:
+            QMessageBox.warning(self, "GitHub Scan Error", error)
+            return
+        GitHubScanDialog(missing_repos, parent=self).exec()
 
     def _action_changelog(self):
         local = _get_bundled_path("CHANGELOG.md")
