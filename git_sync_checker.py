@@ -19,7 +19,7 @@ from pyqt_app_info import AppIdentity, gather_info
 from pyqt_app_info.qt import AboutDialog
 from theme_manager import get_theme_registry, get_fusion_palette
 
-__version__ = "0.6.0"
+__version__ = "0.6.1"
 
 
 if getattr(sys, 'frozen', False):
@@ -295,7 +295,7 @@ class ClaudeResponseThread(QThread):
 
 
 class GitHubScanThread(QThread):
-    scan_done = pyqtSignal(list, str)  # list of (nameWithOwner, url, pushed_at), error_msg
+    scan_done = pyqtSignal(list, str)  # list of (nameWithOwner, url, pushed_at, version), error_msg
 
     def run(self):
         import re
@@ -315,7 +315,7 @@ class GitHubScanThread(QThread):
             if sys.platform.startswith("win"):
                 kwargs["creationflags"] = subprocess.CREATE_NO_WINDOW
             result = subprocess.run(
-                ["gh", "repo", "list", "--json", "nameWithOwner,pushedAt,url", "--limit", "200"],
+                ["gh", "repo", "list", "--json", "nameWithOwner,pushedAt,url,latestRelease", "--limit", "200"],
                 capture_output=True,
                 text=True,
                 encoding="utf-8",
@@ -359,8 +359,10 @@ class GitHubScanThread(QThread):
                 continue
             name_with_owner = repo.get("nameWithOwner", "")
             url = repo.get("url", "")
+            latest_release = repo.get("latestRelease") or {}
+            version = latest_release.get("tagName", "")
             if name_with_owner.lower() not in known_remotes:
-                missing.append((name_with_owner, url, pushed_str))
+                missing.append((name_with_owner, url, pushed_str, version))
 
         self.scan_done.emit(missing, "")
 
@@ -1207,7 +1209,7 @@ class GitHubScanDialog(QDialog):
     def __init__(self, missing_repos: list, parent=None):
         super().__init__(parent)
         self.setWindowTitle("GitHub Scan — Untracked Active Repos")
-        self.setMinimumWidth(580)
+        self.setMinimumWidth(640)
         self.setMinimumHeight(320)
         layout = QVBoxLayout(self)
 
@@ -1231,10 +1233,13 @@ class GitHubScanDialog(QDialog):
             fl.setSpacing(4)
             fl.setContentsMargins(4, 4, 4, 4)
 
-            for name, url, pushed_at in sorted(missing_repos, key=lambda x: x[2], reverse=True):
+            for name, url, pushed_at, version in sorted(missing_repos, key=lambda x: x[2], reverse=True):
                 row = QHBoxLayout()
                 name_lbl = QLabel(f"<b>{name}</b>")
-                name_lbl.setFixedWidth(260)
+                name_lbl.setFixedWidth(240)
+                ver_lbl = QLabel(version)
+                ver_lbl.setStyleSheet("color: #888888;")
+                ver_lbl.setFixedWidth(90)
                 date_str = pushed_at[:10] if pushed_at else ""
                 date_lbl = QLabel(date_str)
                 date_lbl.setStyleSheet("color: #888888;")
@@ -1243,6 +1248,7 @@ class GitHubScanDialog(QDialog):
                 open_btn.setFixedWidth(55)
                 open_btn.clicked.connect(lambda checked, u=url: QDesktopServices.openUrl(QUrl(u)))
                 row.addWidget(name_lbl)
+                row.addWidget(ver_lbl)
                 row.addWidget(date_lbl)
                 row.addWidget(open_btn)
                 row.addStretch()

@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.6.1] - 2026-03-16
+
+### Changed
+- **GitHub Scan — latest release version**: each repo row in the GitHub Scan dialog now shows the latest release tag (e.g. `v1.2.3`) between the repo name and the last-push date.
+
 ## [0.6.0] - 2026-03-15
 
 ### Added
