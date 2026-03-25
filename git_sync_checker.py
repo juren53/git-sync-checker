@@ -19,7 +19,7 @@ from pyqt_app_info import AppIdentity, gather_info
 from pyqt_app_info.qt import AboutDialog
 from theme_manager import get_theme_registry, get_fusion_palette
 
-__version__ = "0.6.1"
+__version__ = "0.6.2"
 
 
 if getattr(sys, 'frozen', False):
@@ -855,6 +855,9 @@ class GitInfoDialog(QDialog):
         self._lbl_url      = QLabel()
         self._lbl_url.setStyleSheet("font-family: 'Courier New', Courier, monospace; font-size: 11px;")
         self._lbl_url.setWordWrap(True)
+        self._copy_url_btn = QPushButton("Copy URL")
+        self._copy_url_btn.setFixedWidth(70)
+        self._copy_url_btn.clicked.connect(self._copy_url)
 
         ov_grid.addWidget(QLabel("<b>Branch:</b>"),   0, 0)
         ov_grid.addWidget(self._lbl_branch,           0, 1)
@@ -864,6 +867,7 @@ class GitInfoDialog(QDialog):
         ov_grid.addWidget(self._lbl_head,             1, 1)
         ov_grid.addWidget(QLabel("<b>URL:</b>"),      1, 2)
         ov_grid.addWidget(self._lbl_url,              1, 3)
+        ov_grid.addWidget(self._copy_url_btn,         1, 4)
         ov_grid.setColumnStretch(3, 1)
         layout.addWidget(ov_frame)
 
@@ -1036,11 +1040,19 @@ class GitInfoDialog(QDialog):
         rc, out, err = run_git_command(self._path, *args)
         return out if rc == 0 else f"(error: {err})"
 
+    def _copy_url(self):
+        url = getattr(self, "_remote_url", "")
+        if url and url != "(no remote)":
+            QApplication.clipboard().setText(url)
+            self._copy_url_btn.setText("Copied!")
+            QTimer.singleShot(1500, lambda: self._copy_url_btn.setText("Copy URL"))
+
     def _populate(self):
         branch   = self._git("branch", "--show-current") or "(detached HEAD)"
         tracking = self._git("rev-parse", "--abbrev-ref", "--symbolic-full-name", "@{u}") or "(none)"
         head_sha = self._git("rev-parse", "--short", "HEAD") or "?"
         url      = self._git("remote", "get-url", "origin") or "(no remote)"
+        self._remote_url = url
 
         self._lbl_branch.setText(branch)
         self._lbl_tracking.setText(tracking)
@@ -1503,7 +1515,7 @@ class MainWindow(QMainWindow):
         name_label.clicked.connect(lambda: self.show_git_info(name))
 
         version_label = QLabel("—")
-        version_label.setFixedWidth(62)
+        version_label.setFixedWidth(100)
         version_label.setStyleSheet("color: #888888;")
         # On Windows, setStyleSheet() can reset the widget font to the system
         # default instead of inheriting from app.setFont(). Re-apply explicitly.

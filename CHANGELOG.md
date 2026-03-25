@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.6.2] - 2026-03-25
+
+### Added
+- **Copy URL button in Git Info dialog**: a "Copy URL" button appears next to the remote URL in the overview strip; clicking it copies the URL to the clipboard and briefly shows "Copied!" as confirmation.
+
+### Changed
+- **Version column wider**: increased the version column width in the main window from 62 px to 100 px to prevent truncation of non-date version strings (e.g. `v1.23.0-beta`).
+
 ## [0.6.1] - 2026-03-16
 
 ### Changed
