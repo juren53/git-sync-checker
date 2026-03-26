@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.6.3] - 2026-03-26
+
+### Added
+- **Open local repo button in Git Info dialog**: an "Open local repo" button appears in the overview strip above the "Copy URL" button; clicking it opens a new terminal window at the root of the local repository (uses Windows Terminal if available, otherwise PowerShell).
+
+### Changed
+- **Version column wider**: increased the version column width in the main window from 100 px to 125 px (25% wider) to better accommodate longer version strings.
+
 ## [0.6.2] - 2026-03-25
 
 ### Added
