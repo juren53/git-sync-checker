@@ -1,5 +1,5 @@
 # -*- mode: python ; coding: utf-8 -*-
-
+# Build with the project venv: venv/Scripts/pyinstaller.exe git-sync-checker.spec
 
 a = Analysis(
     ['git_sync_checker.py'],
