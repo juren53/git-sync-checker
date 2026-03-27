@@ -19,7 +19,7 @@ from pyqt_app_info import AppIdentity, gather_info
 from pyqt_app_info.qt import AboutDialog
 from theme_manager import get_theme_registry, get_fusion_palette
 
-__version__ = "0.6.3"
+__version__ = "0.6.3a"
 
 
 if getattr(sys, 'frozen', False):
@@ -1052,14 +1052,27 @@ class GitInfoDialog(QDialog):
             QTimer.singleShot(1500, lambda: self._copy_url_btn.setText("Copy URL"))
 
     def _open_local_repo(self):
-        import subprocess, shutil
+        import subprocess, shutil, sys
         path = self._path
-        # Try Windows Terminal first, then PowerShell, then cmd
-        if shutil.which("wt"):
-            subprocess.Popen(["wt", "-d", path])
+        if sys.platform == "win32":
+            if shutil.which("wt"):
+                subprocess.Popen(["wt", "-d", path])
+            else:
+                subprocess.Popen(["powershell", "-NoExit", "-Command", f"Set-Location '{path}'"],
+                                 creationflags=subprocess.CREATE_NEW_CONSOLE)
         else:
-            subprocess.Popen(["powershell", "-NoExit", "-Command", f"Set-Location '{path}'"],
-                             creationflags=subprocess.CREATE_NEW_CONSOLE)
+            # Linux/macOS: try common terminal emulators in order
+            for term, args in [
+                ("gnome-terminal", ["--working-directory", path]),
+                ("x-terminal-emulator", [f"--working-directory={path}"]),
+                ("xterm", ["-e", f"cd '{path}' && $SHELL"]),
+                ("konsole", ["--workdir", path]),
+                ("tilix", ["--working-directory", path]),
+                ("xfce4-terminal", ["--working-directory", path]),
+            ]:
+                if shutil.which(term):
+                    subprocess.Popen([term] + args)
+                    return
 
     def _populate(self):
         branch   = self._git("branch", "--show-current") or "(detached HEAD)"

@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.6.3a] - 2026-03-27
+
+### Fixed
+- **Open local repo — Linux crash**: the "Open local repo" button in the Git Info dialog crashed on Linux with `AttributeError: module 'subprocess' has no attribute 'CREATE_NEW_CONSOLE'`. The Windows-specific terminal launch path is now gated behind a `sys.platform == "win32"` check; on Linux/macOS the button tries common terminal emulators in order: `gnome-terminal`, `x-terminal-emulator`, `xterm`, `konsole`, `tilix`, `xfce4-terminal`.
+
 ## [0.6.3] - 2026-03-26
 
 ### Added
