@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.6.4] - 2026-03-29
+
+### Added
+- **Remember sync dialog size and position**: the "Files to Sync" preview dialog now restores its last size and position on open and saves them on close (stored under `sync_preview` in `config.json`).
+
 ## [0.6.3a] - 2026-03-27
 
 ### Fixed

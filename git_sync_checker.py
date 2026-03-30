@@ -19,7 +19,7 @@ from pyqt_app_info import AppIdentity, gather_info
 from pyqt_app_info.qt import AboutDialog
 from theme_manager import get_theme_registry, get_fusion_palette
 
-__version__ = "0.6.3a"
+__version__ = "0.6.4"
 
 
 if getattr(sys, 'frozen', False):
@@ -683,6 +683,10 @@ class SyncPreviewDialog(QDialog):
         super().__init__(parent)
         self.setWindowTitle(f"Files to Sync \u2014 {project_name}")
         self.setMinimumWidth(480)
+        geom = load_window_geometry("sync_preview")
+        if geom:
+            self.resize(geom["width"], geom["height"])
+            self.move(geom["x"], geom["y"])
         layout = QVBoxLayout(self)
 
         if incoming_files:
@@ -730,6 +734,14 @@ class SyncPreviewDialog(QDialog):
         btn_box.accepted.connect(self.accept)
         btn_box.rejected.connect(self.reject)
         layout.addWidget(btn_box)
+
+    def done(self, result):
+        g = self.geometry()
+        save_window_geometry("sync_preview", {
+            "x": g.x(), "y": g.y(),
+            "width": g.width(), "height": g.height(),
+        })
+        super().done(result)
 
 
 class SyncHistoryDialog(QDialog):
